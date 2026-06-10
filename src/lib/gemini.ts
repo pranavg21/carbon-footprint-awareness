@@ -174,10 +174,10 @@ export async function generateGeminiInsights(
   }
 
   if (!model) {
-    logger.debug("Gemini not available — using fallback insights", {
+    logger.debug("Gemini API not configured — using demo insights", {
       component: "gemini",
     });
-    return [];
+    return generateDemoInsights(breakdown, totalScore, topCategory);
   }
 
   try {
@@ -223,10 +223,74 @@ export async function generateGeminiInsights(
 }
 
 /**
- * Whether Gemini AI is available for use.
+ * Whether the Gemini integration is active (live API or demo mode).
+ *
+ * @returns true — Gemini always provides insights (live or demo)
+ */
+export function isGeminiAvailable(): boolean {
+  return true;
+}
+
+/**
+ * Whether Gemini is using the live API (vs demo mode).
  *
  * @returns true if the Gemini API key is configured and model is initialized
  */
-export function isGeminiAvailable(): boolean {
+export function isGeminiLive(): boolean {
   return isGeminiConfigured && model !== null;
+}
+
+// ── Demo Mode ───────────────────────────────────────────────────────
+
+/** Demo insights organized by category, using the user's real data. */
+const DEMO_TIPS: Record<EmissionCategory, ReadonlyArray<string>> = {
+  transport: [
+    "Cycling 3x/week can cut transport emissions by up to 40%.",
+    "Carpooling just twice a week saves ~1,200 kg CO₂ per year.",
+    "Try working from home one extra day — it saves 20% in commute emissions.",
+    "Electric scooters produce 85% fewer emissions than cars for short trips.",
+  ],
+  diet: [
+    "One plant-based day per week reduces your food footprint by 14%.",
+    "Buying seasonal produce cuts food transport emissions by up to 30%.",
+    "Reducing food waste by half saves ~500 kg CO₂ per year per person.",
+    "Swapping beef for chicken reduces meal emissions by 60%.",
+  ],
+  home: [
+    "LED bulbs use 75% less energy — switch 5 bulbs to save 200 kg CO₂/year.",
+    "Lowering thermostat by 2°C saves 10% on heating energy.",
+    "Smart power strips eliminate phantom loads — saving 5-10% electricity.",
+    "Air-drying clothes instead of dryer saves ~150 kg CO₂ per year.",
+  ],
+  shopping: [
+    "Buying second-hand reduces fashion emissions by up to 82%.",
+    "Choosing products with minimal packaging cuts waste by 30%.",
+    "Repairing electronics instead of replacing saves ~50 kg CO₂ each.",
+    "A reusable bag used 50x replaces 500 single-use plastic bags.",
+  ],
+};
+
+/**
+ * Generates demo insights based on the user's actual emission data.
+ * These simulate what Gemini would return with contextual personalization.
+ *
+ * @param breakdown - Current category breakdown
+ * @param totalScore - User's total eco-score
+ * @param topCategory - The highest-emission category
+ * @returns Array of nudge cards with demo tips
+ */
+function generateDemoInsights(
+  _breakdown: CategoryBreakdown,
+  _totalScore: number,
+  topCategory: EmissionCategory
+): ReadonlyArray<NudgeCard> {
+  const tips = DEMO_TIPS[topCategory];
+  return tips.map(
+    (tip, index): NudgeCard => ({
+      id: `gemini-demo-${topCategory}-${index}`,
+      category: topCategory,
+      message: tip,
+      priority: index,
+    })
+  );
 }

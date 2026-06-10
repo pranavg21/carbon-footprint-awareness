@@ -2,17 +2,14 @@
  * Root application component for the CarbonTrack platform.
  *
  * Layout: Sidebar (expanded by default) + main content.
- * Action buttons are promoted to primary position right below
- * the hero score. Stats span full width. No empty voids.
- *
- * Uses React.lazy() for code-splitting below-the-fold components
- * and Suspense boundaries for progressive loading.
+ * Sidebar nav items route between Dashboard, Activity Log,
+ * and Settings views. Uses React.lazy() for code-splitting.
  *
  * @module App
  */
 
-import React, { Suspense, useState, useEffect } from "react";
-import { Sidebar, SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from "./components/layout/Sidebar";
+import React, { Suspense, useState, useEffect, useCallback } from "react";
+import { Sidebar, SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED, type ViewId } from "./components/layout/Sidebar";
 import { SkipLink } from "./components/layout/SkipLink";
 import { Header } from "./components/layout/Header";
 import { HeroScore } from "./components/dashboard/HeroScore";
@@ -22,7 +19,7 @@ import { ToastContainer } from "./components/feedback/ToastContainer";
 import { MAIN_CONTENT_ID } from "./lib/constants";
 import { trackPageView } from "./lib/firebase";
 
-// ── Lazy-loaded below-the-fold components ───────────────────────────
+// ── Lazy-loaded components ──────────────────────────────────────────
 
 /** Lazy-loaded donut chart component for code splitting. */
 const CategoryDonut = React.lazy(
@@ -37,6 +34,16 @@ const StreakHeatmap = React.lazy(
 /** Lazy-loaded nudge feed component for code splitting. */
 const NudgeFeed = React.lazy(
   () => import("./components/nudges/NudgeFeed").then((m) => ({ default: m.NudgeFeed }))
+);
+
+/** Lazy-loaded activity log page for code splitting. */
+const ActivityLog = React.lazy(
+  () => import("./components/pages/ActivityLog").then((m) => ({ default: m.ActivityLog }))
+);
+
+/** Lazy-loaded settings page for code splitting. */
+const SettingsPage = React.lazy(
+  () => import("./components/pages/SettingsPage").then((m) => ({ default: m.SettingsPage }))
 );
 
 /**
@@ -59,33 +66,109 @@ function SectionSkeleton(): React.JSX.Element {
 }
 
 /**
- * Root application component rendering the full dashboard.
+ * Dashboard view — the main eco-tracking dashboard.
+ *
+ * @returns Dashboard content element
+ */
+function DashboardView(): React.JSX.Element {
+  return (
+    <div className="dashboard-grid">
+      <HeroScore />
+      <ActionDock />
+      <StatsRow />
+      <Suspense fallback={<SectionSkeleton />}>
+        <CategoryDonut />
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton />}>
+        <StreakHeatmap />
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton />}>
+        <NudgeFeed />
+      </Suspense>
+    </div>
+  );
+}
+
+/**
+ * Coming Soon placeholder for unbuilt pages.
+ *
+ * @param props - Component props
+ * @returns Placeholder element
+ */
+function ComingSoon({ title }: { readonly title: string }): React.JSX.Element {
+  return (
+    <div className="dashboard-grid">
+      <div className="glass-panel flex flex-col items-center justify-center py-20 text-center">
+        <div className="text-4xl mb-4">🚧</div>
+        <h2 className="text-xl font-bold text-white mb-2">{title}</h2>
+        <p className="text-sm text-slate-500 max-w-sm">
+          This feature is coming soon. Check back for updates on your eco-journey!
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Root application component with sidebar navigation.
  *
  * @returns Application root element
  */
 function App(): React.JSX.Element {
+  const [activeView, setActiveView] = useState<ViewId>("dashboard");
   const [sidebarCollapsed] = useState(false);
 
   const sidebarWidth = sidebarCollapsed
     ? SIDEBAR_WIDTH_COLLAPSED
     : SIDEBAR_WIDTH_EXPANDED;
 
-  // Track page view in Firebase Analytics
-  useEffect(() => {
-    trackPageView("Dashboard");
+  /** Handle navigation with page view tracking. */
+  const handleNavigate = useCallback((view: ViewId): void => {
+    setActiveView(view);
+    trackPageView(view);
   }, []);
+
+  // Track initial page view
+  useEffect(() => {
+    trackPageView("dashboard");
+  }, []);
+
+  /**
+   * Renders the active view based on sidebar selection.
+   *
+   * @returns Active view element
+   */
+  function renderActiveView(): React.JSX.Element {
+    switch (activeView) {
+      case "dashboard":
+        return <DashboardView />;
+      case "activity":
+        return (
+          <Suspense fallback={<SectionSkeleton />}>
+            <ActivityLog />
+          </Suspense>
+        );
+      case "settings":
+        return (
+          <Suspense fallback={<SectionSkeleton />}>
+            <SettingsPage />
+          </Suspense>
+        );
+      case "achievements":
+        return <ComingSoon title="Achievements" />;
+      case "community":
+        return <ComingSoon title="Community" />;
+    }
+  }
 
   return (
     <>
       <SkipLink />
       <ToastContainer />
 
-      {/* App shell: sidebar + main */}
       <div className="flex min-h-screen">
-        {/* Sidebar navigation — expanded by default */}
-        <Sidebar />
+        <Sidebar activeView={activeView} onNavigate={handleNavigate} />
 
-        {/* Main content area — offset by sidebar width */}
         <div
           className="flex-1 flex flex-col min-h-screen transition-[margin] duration-300"
           style={{ marginLeft: sidebarWidth }}
@@ -93,29 +176,7 @@ function App(): React.JSX.Element {
           <Header />
 
           <main id={MAIN_CONTENT_ID} className="flex-1">
-            <div className="dashboard-grid">
-              {/* 1. Hero Score — full width */}
-              <HeroScore />
-
-              {/* 2. Quick Actions — PRIMARY, right below hero */}
-              <ActionDock />
-
-              {/* 3. Stats — full width, 6-column grid */}
-              <StatsRow />
-
-              {/* 4. Chart + Heatmap row — lazy loaded */}
-              <Suspense fallback={<SectionSkeleton />}>
-                <CategoryDonut />
-              </Suspense>
-              <Suspense fallback={<SectionSkeleton />}>
-                <StreakHeatmap />
-              </Suspense>
-
-              {/* 5. Insights — full width at bottom — lazy loaded */}
-              <Suspense fallback={<SectionSkeleton />}>
-                <NudgeFeed />
-              </Suspense>
-            </div>
+            {renderActiveView()}
           </main>
         </div>
       </div>

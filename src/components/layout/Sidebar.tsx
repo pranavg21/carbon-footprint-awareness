@@ -1,16 +1,16 @@
 /**
- * Left sidebar navigation component.
+ * Sidebar navigation component with collapsible layout.
  *
- * Expanded by default with visible labels. Clear active state
- * with colored indicator bar. Collapsible to icon-only mode.
- * Tooltips appear on hover in collapsed state.
- * Displays a simulated user profile card at the bottom.
+ * Renders nav items, user profile badge, and collapse toggle.
+ * Navigation is controlled via `activeView` + `onNavigate` props
+ * from the parent App component.
  *
  * @module Sidebar
  */
 
 import React, { useState } from "react";
 import {
+  Leaf,
   LayoutDashboard,
   Activity,
   Trophy,
@@ -18,18 +18,19 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Leaf,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useCarbonStore } from "../../store/carbon-store";
 import { ECO_LEVEL_THRESHOLDS } from "../../lib/constants";
 
+/** Valid navigation view identifiers. */
+export type ViewId = "dashboard" | "activity" | "achievements" | "community" | "settings";
+
 /** Shape for a navigation item. */
 interface NavItem {
-  readonly id: string;
+  readonly id: ViewId;
   readonly label: string;
   readonly icon: React.ReactNode;
-  readonly active?: boolean;
   readonly badge?: string;
 }
 
@@ -39,7 +40,6 @@ const NAV_ITEMS: ReadonlyArray<NavItem> = [
     id: "dashboard",
     label: "Dashboard",
     icon: <LayoutDashboard className="w-5 h-5" />,
-    active: true,
   },
   {
     id: "activity",
@@ -62,7 +62,7 @@ const NAV_ITEMS: ReadonlyArray<NavItem> = [
     label: "Settings",
     icon: <Settings className="w-5 h-5" />,
   },
-] as const;
+];
 
 /** Sidebar width values as CSS strings. */
 const WIDTH_EXPANDED = "200px";
@@ -82,12 +82,21 @@ function getEcoLevel(points: number): string {
   return "Lvl 1 Eco Novice";
 }
 
+/** Props for the Sidebar component. */
+interface SidebarProps {
+  /** Currently active navigation view. */
+  readonly activeView: ViewId;
+  /** Callback when user clicks a nav item. */
+  readonly onNavigate: (view: ViewId) => void;
+}
+
 /**
- * Sidebar navigation — expanded by default with labels.
+ * Sidebar navigation with working nav item clicks.
  *
+ * @param props - Component props
  * @returns Sidebar element
  */
-export function Sidebar(): React.JSX.Element {
+export function Sidebar({ activeView, onNavigate }: SidebarProps): React.JSX.Element {
   const [collapsed, setCollapsed] = useState(false);
   const totalScore = useCarbonStore((s) => s.totalScore);
 
@@ -122,60 +131,65 @@ export function Sidebar(): React.JSX.Element {
 
       {/* Nav items */}
       <nav className="flex-1 flex flex-col gap-1 px-2.5 py-4">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            className={cn(
-              "flex items-center gap-3 rounded-xl transition-all duration-200 group relative",
-              "text-left w-full",
-              collapsed ? "px-2.5 py-2.5 justify-center" : "py-2.5",
-              item.active
-                ? "bg-eco-mint/12 text-eco-mint px-3"
-                : "text-slate-600 hover:text-slate-300 hover:bg-white/[0.04] px-4 opacity-70 hover:opacity-100"
-            )}
-            aria-current={item.active ? "page" : undefined}
-            type="button"
-          >
-            {/* Active indicator bar */}
-            {item.active ? (
-              <div
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-eco-mint"
-                style={{ boxShadow: "0 0 10px rgba(52, 211, 153, 0.5)" }}
-              />
-            ) : null}
-
-            <span className="flex-shrink-0">{item.icon}</span>
-
-            {/* Label — always visible when expanded */}
-            <span
+        {NAV_ITEMS.map((item) => {
+          const isActive = item.id === activeView;
+          return (
+            <button
+              key={item.id}
+              onClick={(): void => onNavigate(item.id)}
               className={cn(
-                "text-[13px] font-medium whitespace-nowrap transition-all duration-200",
-                collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 flex-1"
+                "flex items-center gap-3 rounded-xl transition-all duration-200 group relative",
+                "text-left w-full",
+                collapsed ? "px-2.5 py-2.5 justify-center" : "py-2.5",
+                isActive
+                  ? "bg-eco-mint/12 text-eco-mint px-3"
+                  : "text-slate-600 hover:text-slate-300 hover:bg-white/[0.04] px-4 opacity-70 hover:opacity-100"
               )}
+              aria-current={isActive ? "page" : undefined}
+              type="button"
+              aria-label={item.label}
             >
-              {item.label}
-            </span>
+              {/* Active indicator bar */}
+              {isActive ? (
+                <div
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-eco-mint"
+                  style={{ boxShadow: "0 0 10px rgba(52, 211, 153, 0.5)" }}
+                />
+              ) : null}
 
-            {/* Badge */}
-            {item.badge && !collapsed ? (
-              <span className="text-[10px] font-bold bg-eco-amber/15 text-eco-amber px-2 py-0.5 rounded-full">
-                {item.badge}
-              </span>
-            ) : null}
+              <span className="flex-shrink-0">{item.icon}</span>
 
-            {/* Badge dot (collapsed) */}
-            {item.badge && collapsed ? (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-eco-amber rounded-full" />
-            ) : null}
-
-            {/* Tooltip for collapsed state */}
-            {collapsed ? (
-              <div className="absolute left-full ml-2 px-2.5 py-1 bg-carbon-800 border border-carbon-700 rounded-lg text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-lg z-50">
+              {/* Label — always visible when expanded */}
+              <span
+                className={cn(
+                  "text-[13px] font-medium whitespace-nowrap transition-all duration-200",
+                  collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 flex-1"
+                )}
+              >
                 {item.label}
-              </div>
-            ) : null}
-          </button>
-        ))}
+              </span>
+
+              {/* Badge */}
+              {item.badge && !collapsed ? (
+                <span className="text-[10px] font-bold bg-eco-amber/15 text-eco-amber px-2 py-0.5 rounded-full">
+                  {item.badge}
+                </span>
+              ) : null}
+
+              {/* Badge dot (collapsed) */}
+              {item.badge && collapsed ? (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-eco-amber rounded-full" />
+              ) : null}
+
+              {/* Tooltip for collapsed state */}
+              {collapsed ? (
+                <div className="absolute left-full ml-2 px-2.5 py-1 bg-carbon-800 border border-carbon-700 rounded-lg text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-lg z-50">
+                  {item.label}
+                </div>
+              ) : null}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Simulated User Profile card */}
