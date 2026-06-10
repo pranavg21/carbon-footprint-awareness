@@ -17,9 +17,6 @@ const HTML_TAG_PATTERN = /<[^>]*>/g;
 /** Pattern matching dangerous URI schemes. */
 const DANGEROUS_URI_PATTERN = /javascript:|data:|vbscript:/gi;
 
-/** Pattern matching control characters (except newline/tab). */
-// eslint-disable-next-line no-control-regex
-const CONTROL_CHAR_PATTERN = new RegExp("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]", "g");
 
 /**
  * Sanitizes a user-provided text input by stripping HTML tags,
@@ -36,7 +33,6 @@ export function sanitizeInput(
   return input
     .replace(HTML_TAG_PATTERN, "")
     .replace(DANGEROUS_URI_PATTERN, "")
-    .replace(CONTROL_CHAR_PATTERN, "")
     .trim()
     .slice(0, maxLength);
 }

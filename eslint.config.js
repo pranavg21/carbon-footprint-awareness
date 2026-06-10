@@ -22,12 +22,12 @@ export default defineConfig([
       // ── PromptWars Strict Linting Rules ─────────────────────────
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-      "@typescript-eslint/consistent-type-imports": ["warn", { prefer: "type-imports" }],
-      "@typescript-eslint/explicit-function-return-type": ["warn", {
+      "@typescript-eslint/consistent-type-imports": ["error", { prefer: "type-imports" }],
+      "@typescript-eslint/explicit-function-return-type": ["error", {
         allowExpressions: true,
         allowTypedFunctionExpressions: true,
       }],
-      "no-console": "warn",
+      "no-console": "error",
       "no-duplicate-imports": "error",
       "prefer-const": "error",
       "no-var": "error",
