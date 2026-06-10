@@ -63,6 +63,19 @@ interface CarbonActions {
   readonly logAction: (actionKey: QuickActionKey) => void;
 
   /**
+   * Logs a custom eco-action with category, points, and description.
+   *
+   * @param category - Emission category
+   * @param points - Impact points
+   * @param description - Description of the action
+   */
+  readonly logCustomAction: (
+    category: EmissionCategory,
+    points: number,
+    description: string
+  ) => void;
+
+  /**
    * Resets the store to fresh seed data.
    */
   readonly resetStore: () => void;
@@ -203,6 +216,69 @@ export const useCarbonStore = create<CarbonStore>()(
 
           return {
             totalScore: state.totalScore + action.points,
+            categoryBreakdown: newBreakdown,
+            actionLog: [...state.actionLog, newEntry],
+            dailyLogs: newDailyLogs,
+            currentStreak: newCurrentStreak,
+            longestStreak: newLongestStreak,
+            nudges: newNudges,
+          };
+        });
+      },
+
+      logCustomAction: (
+        category: EmissionCategory,
+        points: number,
+        description: string
+      ): void => {
+        const today = getTodayDateString();
+        const now = new Date().toISOString();
+
+        const newEntry: ActionLogEntry = {
+          id: generateId(),
+          timestamp: now,
+          category,
+          actionType: "custom",
+          points,
+          description,
+        };
+
+        logger.info("Custom action logged", {
+          component: "carbon-store",
+          category,
+          points,
+        });
+
+        set((state) => {
+          const newBreakdown = { ...state.categoryBreakdown };
+          newBreakdown[category] += points;
+
+          const newDailyLogs = { ...state.dailyLogs };
+          const existingDaily = newDailyLogs[today];
+          if (existingDaily) {
+            newDailyLogs[today] = {
+              ...existingDaily,
+              actionCount: existingDaily.actionCount + 1,
+              totalPoints: existingDaily.totalPoints + points,
+            };
+          } else {
+            newDailyLogs[today] = {
+              date: today,
+              actionCount: 1,
+              totalPoints: points,
+            };
+          }
+
+          const newCurrentStreak = computeCurrentStreak(newDailyLogs);
+          const newLongestStreak = Math.max(
+            computeLongestStreak(newDailyLogs),
+            state.longestStreak
+          );
+
+          const newNudges = generateNudges(newBreakdown);
+
+          return {
+            totalScore: state.totalScore + points,
             categoryBreakdown: newBreakdown,
             actionLog: [...state.actionLog, newEntry],
             dailyLogs: newDailyLogs,

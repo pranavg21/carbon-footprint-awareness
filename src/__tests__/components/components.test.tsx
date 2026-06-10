@@ -107,10 +107,10 @@ describe("ActionDock", () => {
     useCarbonStore.getState().resetStore();
   });
 
-  it("should render 4 action buttons", () => {
+  it("should render 4 action buttons and 1 toggle button", () => {
     render(React.createElement(ActionDock));
     const buttons = screen.getAllByRole("button");
-    expect(buttons.length).toBe(4);
+    expect(buttons.length).toBe(5);
   });
 
   it("should have aria-labels on all buttons", () => {
@@ -121,7 +121,7 @@ describe("ActionDock", () => {
     }
   });
 
-  it("should update store on click", () => {
+  it("should update store on quick action click", () => {
     render(React.createElement(ActionDock));
     const scoreBefore = useCarbonStore.getState().totalScore;
     const button = screen.getByLabelText(/Plant-Based Meal/i);
@@ -136,6 +136,35 @@ describe("ActionDock", () => {
     fireEvent.click(button);
     const toasts = useToastStore.getState().toasts;
     expect(toasts.length).toBeGreaterThan(0);
+  });
+
+  it("should toggle custom action form and submit successfully", () => {
+    render(React.createElement(ActionDock));
+    const toggle = screen.getByLabelText("Switch to custom action logging");
+    fireEvent.click(toggle);
+
+    // Form inputs should be visible
+    expect(screen.getByLabelText("Category")).toBeInTheDocument();
+    expect(screen.getByLabelText("Description")).toBeInTheDocument();
+    expect(screen.getByLabelText("Impact Points")).toBeInTheDocument();
+
+    // Fill the inputs
+    const descInput = screen.getByLabelText("Description");
+    const pointsInput = screen.getByLabelText("Impact Points");
+
+    fireEvent.change(descInput, { target: { value: "Recycled laptops" } });
+    fireEvent.change(pointsInput, { target: { value: "30" } });
+
+    // Submit
+    const form = screen.getByRole("navigation").querySelector("form");
+    expect(form).not.toBeNull();
+    fireEvent.submit(form!);
+
+    // Store state should be updated
+    const state = useCarbonStore.getState();
+    const lastAction = state.actionLog[state.actionLog.length - 1];
+    expect(lastAction?.description).toBe("Recycled laptops");
+    expect(lastAction?.points).toBe(30);
   });
 });
 

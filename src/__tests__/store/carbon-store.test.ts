@@ -98,6 +98,29 @@ describe("useCarbonStore", () => {
     });
   });
 
+  describe("logCustomAction", () => {
+    it("should increase total score by custom action points", () => {
+      const before = useCarbonStore.getState().totalScore;
+      useCarbonStore.getState().logCustomAction("diet", 45, "Ate local salad");
+      const after = useCarbonStore.getState().totalScore;
+      expect(after).toBe(before + 45);
+    });
+
+    it("should add custom entry to action log", () => {
+      const beforeCount = useCarbonStore.getState().actionLog.length;
+      useCarbonStore.getState().logCustomAction("shopping", 12, "Eco bag");
+      const afterCount = useCarbonStore.getState().actionLog.length;
+      expect(afterCount).toBe(beforeCount + 1);
+
+      const state = useCarbonStore.getState();
+      const lastEntry = state.actionLog[state.actionLog.length - 1];
+      expect(lastEntry?.description).toBe("Eco bag");
+      expect(lastEntry?.points).toBe(12);
+      expect(lastEntry?.category).toBe("shopping");
+      expect(lastEntry?.actionType).toBe("custom");
+    });
+  });
+
   describe("resetStore", () => {
     it("should reset to a fresh seed state", () => {
       // Log several actions

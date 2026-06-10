@@ -1,0 +1,16 @@
+{
+  "short_name": "CarbonTrack",
+  "name": "CarbonTrack — Gamified Carbon Footprint Tracker",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#050a15",
+  "theme_color": "#060b18",
+  "display": "standalone",
+  "orientation": "portrait"
+}

@@ -4,6 +4,7 @@
  * Expanded by default with visible labels. Clear active state
  * with colored indicator bar. Collapsible to icon-only mode.
  * Tooltips appear on hover in collapsed state.
+ * Displays a simulated user profile card at the bottom.
  *
  * @module Sidebar
  */
@@ -20,6 +21,7 @@ import {
   Leaf,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { useCarbonStore } from "../../store/carbon-store";
 
 /** Shape for a navigation item. */
 interface NavItem {
@@ -66,12 +68,27 @@ const WIDTH_EXPANDED = "200px";
 const WIDTH_COLLAPSED = "64px";
 
 /**
+ * Computes an eco-hero level label based on point thresholds.
+ *
+ * @param points - Current total eco-points
+ * @returns Human-readable level string
+ */
+function getEcoLevel(points: number): string {
+  if (points >= 1200) return "Lvl 5 Green Legend";
+  if (points >= 900) return "Lvl 4 Earth Guardian";
+  if (points >= 600) return "Lvl 3 Planet Friend";
+  if (points >= 300) return "Lvl 2 Carbon Crusader";
+  return "Lvl 1 Eco Novice";
+}
+
+/**
  * Sidebar navigation — expanded by default with labels.
  *
  * @returns Sidebar element
  */
 export function Sidebar(): React.JSX.Element {
   const [collapsed, setCollapsed] = useState(false);
+  const totalScore = useCarbonStore((s) => s.totalScore);
 
   const width = collapsed ? WIDTH_COLLAPSED : WIDTH_EXPANDED;
 
@@ -159,6 +176,28 @@ export function Sidebar(): React.JSX.Element {
           </button>
         ))}
       </nav>
+
+      {/* Simulated User Profile card */}
+      <div className="px-3.5 py-4 border-t border-white/[0.04] mt-auto">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-eco-cyan to-eco-mint flex items-center justify-center text-[11px] font-black text-carbon-950 flex-shrink-0">
+            PG
+          </div>
+          <div
+            className={cn(
+              "flex flex-col min-w-0 transition-opacity duration-200",
+              collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 flex-1"
+            )}
+          >
+            <span className="text-xs font-bold text-white truncate">
+              Pranav Ghadge
+            </span>
+            <span className="text-[10px] text-eco-mint font-semibold truncate">
+              {getEcoLevel(totalScore)}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Collapse toggle at bottom */}
       <div className="px-2.5 pb-4">
