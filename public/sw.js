@@ -9,6 +9,7 @@ const CACHE_NAME = "carbontrack-cache-v1";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
+  "/offline.html",
   "/favicon.svg",
   "/icons.svg",
 ];
@@ -62,7 +63,7 @@ self.addEventListener("fetch", (event) => {
           return caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) return cachedResponse;
             if (event.request.mode === "navigate") {
-              return caches.match("/index.html");
+              return caches.match("/offline.html");
             }
             return new Response("Offline content not available", {
               status: 503,

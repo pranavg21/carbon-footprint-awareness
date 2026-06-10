@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useCarbonStore } from "../../store/carbon-store";
+import { ECO_LEVEL_THRESHOLDS } from "../../lib/constants";
 
 /** Shape for a navigation item. */
 interface NavItem {
@@ -74,10 +75,10 @@ const WIDTH_COLLAPSED = "64px";
  * @returns Human-readable level string
  */
 function getEcoLevel(points: number): string {
-  if (points >= 1200) return "Lvl 5 Green Legend";
-  if (points >= 900) return "Lvl 4 Earth Guardian";
-  if (points >= 600) return "Lvl 3 Planet Friend";
-  if (points >= 300) return "Lvl 2 Carbon Crusader";
+  if (points >= ECO_LEVEL_THRESHOLDS.LEVEL_5) return "Lvl 5 Green Legend";
+  if (points >= ECO_LEVEL_THRESHOLDS.LEVEL_4) return "Lvl 4 Earth Guardian";
+  if (points >= ECO_LEVEL_THRESHOLDS.LEVEL_3) return "Lvl 3 Planet Friend";
+  if (points >= ECO_LEVEL_THRESHOLDS.LEVEL_2) return "Lvl 2 Carbon Crusader";
   return "Lvl 1 Eco Novice";
 }
 

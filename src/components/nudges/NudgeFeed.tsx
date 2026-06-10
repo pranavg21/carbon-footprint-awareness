@@ -1,34 +1,22 @@
 /**
- * Dynamic nudge feed component.
+ * Dynamic nudge feed component with Gemini AI integration.
  *
- * Displays personalized insight cards. The section header shows
- * the top category on its own line below the title. Individual
- * cards have generous 14-16px padding for a card-like feel.
+ * Displays personalized insight cards. When Gemini AI is configured,
+ * generates contextual tips based on the user's actual emission data.
+ * Falls back to hardcoded tips when API is unavailable.
  *
  * @module NudgeFeed
  */
 
-import React, { useMemo } from "react";
-import {
-  Car,
-  Utensils,
-  Home,
-  ShoppingBag,
-  Sparkles,
-} from "lucide-react";
+import React, { useMemo, useState, useEffect } from "react";
+import { Sparkles } from "lucide-react";
 import { useCarbonStore } from "../../store/carbon-store";
 import { GlassCard } from "../shared/GlassCard";
-import { CATEGORY_COLORS, CATEGORY_LABELS, type EmissionCategory } from "../../lib/constants";
+import { CATEGORY_COLORS, CATEGORY_LABELS } from "../../lib/constants";
 import type { NudgeCard as NudgeCardType } from "../../lib/schemas";
 import { getTopCategory } from "../../lib/seed-data";
-
-/** Map of categories to Lucide icon components. */
-const CATEGORY_ICON_MAP: Record<EmissionCategory, React.ReactNode> = {
-  transport: <Car className="w-4 h-4" aria-hidden="true" />,
-  diet: <Utensils className="w-4 h-4" aria-hidden="true" />,
-  home: <Home className="w-4 h-4" aria-hidden="true" />,
-  shopping: <ShoppingBag className="w-4 h-4" aria-hidden="true" />,
-};
+import { CATEGORY_ICONS_MD } from "../../lib/category-icons";
+import { generateGeminiInsights, isGeminiAvailable } from "../../lib/gemini";
 
 /** Props for the individual NudgeCard component. */
 interface NudgeCardProps {
@@ -44,7 +32,7 @@ interface NudgeCardProps {
  */
 function NudgeCardItem({ nudge }: NudgeCardProps): React.JSX.Element {
   const color = CATEGORY_COLORS[nudge.category];
-  const icon = CATEGORY_ICON_MAP[nudge.category];
+  const icon = CATEGORY_ICONS_MD[nudge.category];
   const label = CATEGORY_LABELS[nudge.category];
 
   return (
@@ -75,16 +63,48 @@ function NudgeCardItem({ nudge }: NudgeCardProps): React.JSX.Element {
 
 /**
  * Vertical feed of personalized eco-nudge cards.
+ * Uses Gemini AI when available, otherwise falls back to store nudges.
  *
  * @returns Nudge feed element
  */
 export function NudgeFeed(): React.JSX.Element {
   const nudges = useCarbonStore((s) => s.nudges);
   const categoryBreakdown = useCarbonStore((s) => s.categoryBreakdown);
+  const totalScore = useCarbonStore((s) => s.totalScore);
   const topCategory = useMemo(
     () => getTopCategory(categoryBreakdown),
     [categoryBreakdown]
   );
+
+  // Gemini AI-powered insights
+  const [aiInsights, setAiInsights] = useState<ReadonlyArray<NudgeCardType>>([]);
+  const [isAiLoading, setIsAiLoading] = useState(() => isGeminiAvailable());
+
+  useEffect(() => {
+    if (!isGeminiAvailable()) return;
+
+    let cancelled = false;
+
+    void generateGeminiInsights(categoryBreakdown, totalScore, topCategory)
+      .then((insights) => {
+        if (!cancelled && insights.length > 0) {
+          setAiInsights(insights);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsAiLoading(false);
+        }
+      });
+
+    return (): void => {
+      cancelled = true;
+    };
+  }, [categoryBreakdown, totalScore, topCategory]);
+
+  /** Display AI insights when available, otherwise fallback to store nudges. */
+  const displayNudges = aiInsights.length > 0 ? aiInsights : nudges;
+  const isAiPowered = aiInsights.length > 0;
 
   return (
     <GlassCard className="nudge-section">
@@ -94,6 +114,14 @@ export function NudgeFeed(): React.JSX.Element {
         <h2 className="text-sm font-bold text-white uppercase tracking-wider">
           Smart Insights
         </h2>
+        {isAiPowered ? (
+          <span className="text-[9px] font-bold text-eco-violet bg-eco-violet/12 px-2 py-0.5 rounded-full border border-eco-violet/25 uppercase tracking-wider">
+            Gemini AI
+          </span>
+        ) : null}
+        {isAiLoading ? (
+          <span className="text-[9px] text-slate-500 animate-pulse">Generating…</span>
+        ) : null}
       </div>
 
       {/* Top category badge — on its own line, clearly a filter indicator */}
@@ -111,7 +139,7 @@ export function NudgeFeed(): React.JSX.Element {
       </div>
 
       <div className="flex flex-col gap-3 stagger-children">
-        {nudges.map((nudge) => (
+        {displayNudges.map((nudge) => (
           <NudgeCardItem
             key={nudge.id}
             nudge={nudge}

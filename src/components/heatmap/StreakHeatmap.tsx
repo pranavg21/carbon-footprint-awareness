@@ -171,6 +171,8 @@ export function StreakHeatmap(): React.JSX.Element {
 
       {/* Heatmap CSS Grid — cells fill 100% width */}
       <div
+        role="grid"
+        aria-label="30-day activity heatmap grid"
         style={{
           display: "grid",
           gridTemplateColumns: `36px repeat(${numCols}, 1fr)`,
@@ -202,7 +204,7 @@ export function StreakHeatmap(): React.JSX.Element {
         {DAY_LABELS.map((label, rowIndex) => (
           <React.Fragment key={label}>
             {/* Day label */}
-            <div className="flex items-center justify-end pr-1.5">
+            <div className="flex items-center justify-end pr-1.5" role="rowheader">
               <span className="text-[10px] text-slate-500 font-medium leading-none">
                 {label}
               </span>

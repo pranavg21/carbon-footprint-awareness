@@ -13,6 +13,8 @@ import { Utensils, Bus, Zap, Recycle } from "lucide-react";
 import { useCarbonStore } from "../../store/carbon-store";
 import { useToastStore } from "../../hooks/useToast";
 import { QUICK_ACTIONS, type QuickActionKey, type EmissionCategory } from "../../lib/constants";
+import { emissionCategorySchema } from "../../lib/schemas";
+import { sanitizeInput } from "../../lib/sanitize";
 import { z } from "zod";
 
 /** Map of action keys to Lucide icon components. */
@@ -104,10 +106,12 @@ export function ActionDock(): React.JSX.Element {
       e.preventDefault();
       setValidationError("");
 
+      const sanitizedDescription = sanitizeInput(description);
+
       const result = customActionSchema.safeParse({
         category,
         points,
-        description,
+        description: sanitizedDescription,
       });
 
       if (!result.success) {
@@ -116,8 +120,8 @@ export function ActionDock(): React.JSX.Element {
         return;
       }
 
-      logCustomAction(category, points, description);
-      addToast(`🌱 Custom Action "${description}" logged! +${points} pts`, "success");
+      logCustomAction(category, points, sanitizedDescription);
+      addToast(`🌱 Custom Action "${sanitizedDescription}" logged! +${points} pts`, "success");
 
       // Reset form
       setDescription("");
@@ -164,7 +168,12 @@ export function ActionDock(): React.JSX.Element {
                 <select
                   id="custom-category"
                   value={category}
-                  onChange={(e): void => setCategory(e.target.value as EmissionCategory)}
+                  onChange={(e): void => {
+                    const parsed = emissionCategorySchema.safeParse(e.target.value);
+                    if (parsed.success) {
+                      setCategory(parsed.data);
+                    }
+                  }}
                   className="bg-carbon-900 border border-glass-border rounded-xl text-xs text-white p-2.5 outline-none focus:border-eco-mint focus:ring-1 focus:ring-eco-mint transition-all"
                 >
                   <option value="transport">Transport</option>

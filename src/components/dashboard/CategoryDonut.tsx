@@ -12,15 +12,9 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useCarbonStore } from "../../store/carbon-store";
 import { CATEGORY_COLORS, CATEGORY_LABELS, EMISSION_CATEGORIES, type EmissionCategory } from "../../lib/constants";
 import { GlassCard } from "../shared/GlassCard";
-import { Car, Utensils, Home, ShoppingBag } from "lucide-react";
+import { CATEGORY_ICONS_SM } from "../../lib/category-icons";
 
-/** Category icon map for legend. */
-const LEGEND_ICONS: Record<EmissionCategory, React.ReactNode> = {
-  transport: <Car className="w-3.5 h-3.5" aria-hidden="true" />,
-  diet: <Utensils className="w-3.5 h-3.5" aria-hidden="true" />,
-  home: <Home className="w-3.5 h-3.5" aria-hidden="true" />,
-  shopping: <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />,
-};
+
 
 /** SVG donut configuration. */
 const DONUT_SIZE = 200;
@@ -196,9 +190,15 @@ export function CategoryDonut(): React.JSX.Element {
                   transformOrigin: `${DONUT_CENTER}px ${DONUT_CENTER}px`,
                   transform: isHovered ? "scale(1.06)" : "scale(1)",
                   cursor: "pointer",
+                  outline: "none",
                 }}
+                tabIndex={0}
+                role="button"
+                aria-label={`${CATEGORY_LABELS[seg.category]}: ${seg.value.toLocaleString()} points, ${Math.round(seg.percentage)}%`}
                 onMouseEnter={(): void => handleMouseEnter(seg.category)}
                 onMouseLeave={handleMouseLeave}
+                onFocus={(): void => handleMouseEnter(seg.category)}
+                onBlur={handleMouseLeave}
               />
             );
           })}
@@ -261,7 +261,7 @@ export function CategoryDonut(): React.JSX.Element {
                   style={{ backgroundColor: `${seg.color}18` }}
                 >
                   <span style={{ color: seg.color }}>
-                    {LEGEND_ICONS[seg.category]}
+                    {CATEGORY_ICONS_SM[seg.category]}
                   </span>
                 </div>
                 <span className="text-[13px] text-slate-200 flex-1 font-medium">

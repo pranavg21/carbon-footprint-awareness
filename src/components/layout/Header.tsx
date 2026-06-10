@@ -12,6 +12,7 @@ import { Download, Flame } from "lucide-react";
 import { useCarbonStore } from "../../store/carbon-store";
 import { useToastStore } from "../../hooks/useToast";
 import { logger } from "../../lib/logger";
+import { trackExportEvent } from "../../lib/firebase";
 
 /**
  * Exports the current store state as a JSON file download.
@@ -42,6 +43,7 @@ function exportData(state: {
   anchor.click();
   URL.revokeObjectURL(url);
   logger.info("Data exported", { component: "Header" });
+  trackExportEvent();
 }
 
 /**

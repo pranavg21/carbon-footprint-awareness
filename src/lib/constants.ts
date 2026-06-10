@@ -167,6 +167,20 @@ export const NUDGE_TIPS: Record<EmissionCategory, readonly string[]> = {
 /** Key for persisting Zustand store in localStorage. */
 export const STORAGE_KEY = "carbontrack-store" as const;
 
+// ── Eco Level Thresholds ────────────────────────────────────────────
+
+/** Point thresholds for eco-hero level progression. */
+export const ECO_LEVEL_THRESHOLDS = {
+  /** Points required for Level 5 — Green Legend. */
+  LEVEL_5: 1200,
+  /** Points required for Level 4 — Earth Guardian. */
+  LEVEL_4: 900,
+  /** Points required for Level 3 — Planet Friend. */
+  LEVEL_3: 600,
+  /** Points required for Level 2 — Carbon Crusader. */
+  LEVEL_2: 300,
+} as const;
+
 // ── Accessibility ───────────────────────────────────────────────────
 
 /** ID for the main content area (skip link target). */

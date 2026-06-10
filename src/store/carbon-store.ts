@@ -4,14 +4,14 @@
  * Single source of truth for all carbon tracking state. Every
  * component reads from this store — no isolated useState for
  * data that affects other components. Persisted to localStorage
- * with Zod-validated rehydration.
+ * with Zod-validated rehydration. Syncs to Firestore when configured.
  *
  * @module carbon-store
  */
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { ActionLogEntry, DailyLog, CategoryBreakdown, NudgeCard } from "../lib/schemas";
+import { persistedStateSchema, type ActionLogEntry, type DailyLog, type CategoryBreakdown, type NudgeCard } from "../lib/schemas";
 import {
   MONTHLY_TARGET_SCORE,
   STORAGE_KEY,
@@ -30,6 +30,7 @@ import {
   getTopCategory,
 } from "../lib/seed-data";
 import { logger } from "../lib/logger";
+import { persistActionToFirestore, trackActionEvent } from "../lib/firebase";
 
 // ── Store Types ─────────────────────────────────────────────────────
 
@@ -83,6 +84,64 @@ interface CarbonActions {
 
 /** Combined store type. */
 type CarbonStore = CarbonState & CarbonActions;
+
+// ── Shared State Update Helper ──────────────────────────────────────
+
+/**
+ * Atomically applies an action entry to the store state.
+ * Extracted to eliminate code duplication between logAction and logCustomAction.
+ *
+ * @param state - Current store state
+ * @param entry - The action log entry to apply
+ * @returns Partial state update with all derived fields recomputed
+ */
+function applyActionToState(
+  state: CarbonState,
+  entry: ActionLogEntry
+): Partial<CarbonState> {
+  const today = entry.timestamp.split("T")[0] ?? getTodayDateString();
+
+  // Update category breakdown
+  const newBreakdown = { ...state.categoryBreakdown };
+  newBreakdown[entry.category] += entry.points;
+
+  // Update daily log
+  const newDailyLogs = { ...state.dailyLogs };
+  const existingDaily = newDailyLogs[today];
+  if (existingDaily) {
+    newDailyLogs[today] = {
+      ...existingDaily,
+      actionCount: existingDaily.actionCount + 1,
+      totalPoints: existingDaily.totalPoints + entry.points,
+    };
+  } else {
+    newDailyLogs[today] = {
+      date: today,
+      actionCount: 1,
+      totalPoints: entry.points,
+    };
+  }
+
+  // Update streaks
+  const newCurrentStreak = computeCurrentStreak(newDailyLogs);
+  const newLongestStreak = Math.max(
+    computeLongestStreak(newDailyLogs),
+    state.longestStreak
+  );
+
+  // Regenerate nudges based on new breakdown
+  const newNudges = generateNudges(newBreakdown);
+
+  return {
+    totalScore: state.totalScore + entry.points,
+    categoryBreakdown: newBreakdown,
+    actionLog: [...state.actionLog, entry],
+    dailyLogs: newDailyLogs,
+    currentStreak: newCurrentStreak,
+    longestStreak: newLongestStreak,
+    nudges: newNudges,
+  };
+}
 
 // ── Nudge Generator ─────────────────────────────────────────────────
 
@@ -155,6 +214,7 @@ function createInitialState(): CarbonState {
  * Main Zustand store with persistence middleware.
  * All components read from this single store. logAction atomically
  * updates score, category breakdown, daily log, streak, and nudges.
+ * Data is synced to Firestore and Analytics when configured.
  */
 export const useCarbonStore = create<CarbonStore>()(
   persist(
@@ -163,7 +223,6 @@ export const useCarbonStore = create<CarbonStore>()(
 
       logAction: (actionKey: QuickActionKey): void => {
         const action = QUICK_ACTIONS[actionKey];
-        const today = getTodayDateString();
         const now = new Date().toISOString();
 
         const newEntry: ActionLogEntry = {
@@ -182,48 +241,11 @@ export const useCarbonStore = create<CarbonStore>()(
           points: action.points,
         });
 
-        set((state) => {
-          // Update category breakdown
-          const newBreakdown = { ...state.categoryBreakdown };
-          newBreakdown[action.category] += action.points;
+        set((state) => applyActionToState(state, newEntry));
 
-          // Update daily log
-          const newDailyLogs = { ...state.dailyLogs };
-          const existingDaily = newDailyLogs[today];
-          if (existingDaily) {
-            newDailyLogs[today] = {
-              ...existingDaily,
-              actionCount: existingDaily.actionCount + 1,
-              totalPoints: existingDaily.totalPoints + action.points,
-            };
-          } else {
-            newDailyLogs[today] = {
-              date: today,
-              actionCount: 1,
-              totalPoints: action.points,
-            };
-          }
-
-          // Update streaks
-          const newCurrentStreak = computeCurrentStreak(newDailyLogs);
-          const newLongestStreak = Math.max(
-            computeLongestStreak(newDailyLogs),
-            state.longestStreak
-          );
-
-          // Regenerate nudges based on new breakdown
-          const newNudges = generateNudges(newBreakdown);
-
-          return {
-            totalScore: state.totalScore + action.points,
-            categoryBreakdown: newBreakdown,
-            actionLog: [...state.actionLog, newEntry],
-            dailyLogs: newDailyLogs,
-            currentStreak: newCurrentStreak,
-            longestStreak: newLongestStreak,
-            nudges: newNudges,
-          };
-        });
+        // Async side effects — Firestore persistence + Analytics
+        void persistActionToFirestore(newEntry);
+        trackActionEvent(action.id, action.category, action.points);
       },
 
       logCustomAction: (
@@ -231,7 +253,6 @@ export const useCarbonStore = create<CarbonStore>()(
         points: number,
         description: string
       ): void => {
-        const today = getTodayDateString();
         const now = new Date().toISOString();
 
         const newEntry: ActionLogEntry = {
@@ -249,44 +270,11 @@ export const useCarbonStore = create<CarbonStore>()(
           points,
         });
 
-        set((state) => {
-          const newBreakdown = { ...state.categoryBreakdown };
-          newBreakdown[category] += points;
+        set((state) => applyActionToState(state, newEntry));
 
-          const newDailyLogs = { ...state.dailyLogs };
-          const existingDaily = newDailyLogs[today];
-          if (existingDaily) {
-            newDailyLogs[today] = {
-              ...existingDaily,
-              actionCount: existingDaily.actionCount + 1,
-              totalPoints: existingDaily.totalPoints + points,
-            };
-          } else {
-            newDailyLogs[today] = {
-              date: today,
-              actionCount: 1,
-              totalPoints: points,
-            };
-          }
-
-          const newCurrentStreak = computeCurrentStreak(newDailyLogs);
-          const newLongestStreak = Math.max(
-            computeLongestStreak(newDailyLogs),
-            state.longestStreak
-          );
-
-          const newNudges = generateNudges(newBreakdown);
-
-          return {
-            totalScore: state.totalScore + points,
-            categoryBreakdown: newBreakdown,
-            actionLog: [...state.actionLog, newEntry],
-            dailyLogs: newDailyLogs,
-            currentStreak: newCurrentStreak,
-            longestStreak: newLongestStreak,
-            nudges: newNudges,
-          };
-        });
+        // Async side effects
+        void persistActionToFirestore(newEntry);
+        trackActionEvent("custom", category, points);
       },
 
       resetStore: (): void => {
@@ -305,6 +293,30 @@ export const useCarbonStore = create<CarbonStore>()(
         currentStreak: state.currentStreak,
         longestStreak: state.longestStreak,
       }),
+      /**
+       * Validates persisted state from localStorage using Zod schema.
+       * Falls back to fresh seed data if validation fails.
+       */
+      merge: (persistedState, currentState) => {
+        const result = persistedStateSchema.safeParse(persistedState);
+
+        if (result.success) {
+          logger.debug("Persisted state rehydrated successfully", {
+            component: "carbon-store",
+          });
+          return {
+            ...currentState,
+            ...result.data,
+            nudges: generateNudges(result.data.categoryBreakdown),
+          };
+        }
+
+        logger.warn("Persisted state validation failed — using fresh data", {
+          component: "carbon-store",
+          errors: result.error.issues.map((i) => i.message),
+        });
+        return currentState;
+      },
     }
   )
 );
