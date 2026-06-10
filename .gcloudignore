@@ -1,3 +1,4 @@
 #!include:.gitignore
-# Override: include .env.production for Vite build
+
+# Override: include env files for Vite build-time injection
 !.env.production
