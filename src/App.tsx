@@ -9,7 +9,7 @@
  */
 
 import React, { useState } from "react";
-import { Sidebar } from "./components/layout/Sidebar";
+import { Sidebar, SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from "./components/layout/Sidebar";
 import { SkipLink } from "./components/layout/SkipLink";
 import { Header } from "./components/layout/Header";
 import { HeroScore } from "./components/dashboard/HeroScore";
@@ -20,10 +20,6 @@ import { StreakHeatmap } from "./components/heatmap/StreakHeatmap";
 import { NudgeFeed } from "./components/nudges/NudgeFeed";
 import { ToastContainer } from "./components/feedback/ToastContainer";
 import { MAIN_CONTENT_ID } from "./lib/constants";
-import {
-  SIDEBAR_WIDTH_EXPANDED,
-  SIDEBAR_WIDTH_COLLAPSED,
-} from "./components/layout/Sidebar";
 
 /**
  * Root application component rendering the full dashboard.

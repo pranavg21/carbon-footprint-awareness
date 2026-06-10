@@ -46,7 +46,8 @@ describe("actionLogEntrySchema", () => {
   });
 
   it("should reject entries with missing fields", () => {
-    const { id, ...withoutId } = validEntry;
+    const withoutId = { ...validEntry } as Partial<typeof validEntry>;
+    delete withoutId.id;
     expect(() => actionLogEntrySchema.parse(withoutId)).toThrow();
   });
 

@@ -19,8 +19,9 @@ import {
   MAX_NUDGE_CARDS,
   NUDGE_TIPS,
   EMISSION_CATEGORIES,
+  type QuickActionKey,
+  type EmissionCategory,
 } from "../lib/constants";
-import type { QuickActionKey, EmissionCategory } from "../lib/constants";
 import { generateId, getTodayDateString } from "../lib/utils";
 import {
   generateSeedState,

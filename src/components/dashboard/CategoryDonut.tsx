@@ -10,8 +10,7 @@
 
 import React, { useState, useMemo, useCallback } from "react";
 import { useCarbonStore } from "../../store/carbon-store";
-import { CATEGORY_COLORS, CATEGORY_LABELS, EMISSION_CATEGORIES } from "../../lib/constants";
-import type { EmissionCategory } from "../../lib/constants";
+import { CATEGORY_COLORS, CATEGORY_LABELS, EMISSION_CATEGORIES, type EmissionCategory } from "../../lib/constants";
 import { GlassCard } from "../shared/GlassCard";
 import { Car, Utensils, Home, ShoppingBag } from "lucide-react";
 

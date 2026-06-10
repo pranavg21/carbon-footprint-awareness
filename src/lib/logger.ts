@@ -42,12 +42,9 @@ function writeLog(
     ...meta,
   };
 
-  // eslint-disable-next-line no-console
   if (severity === "ERROR" || severity === "CRITICAL") {
-    // eslint-disable-next-line no-console
     console.error(JSON.stringify(entry));
   } else {
-    // eslint-disable-next-line no-console
     console.log(JSON.stringify(entry));
   }
 }

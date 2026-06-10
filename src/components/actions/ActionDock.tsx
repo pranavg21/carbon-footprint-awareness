@@ -11,8 +11,7 @@ import React, { useCallback } from "react";
 import { Utensils, Bus, Zap, Recycle } from "lucide-react";
 import { useCarbonStore } from "../../store/carbon-store";
 import { useToastStore } from "../../hooks/useToast";
-import { QUICK_ACTIONS } from "../../lib/constants";
-import type { QuickActionKey } from "../../lib/constants";
+import { QUICK_ACTIONS, type QuickActionKey } from "../../lib/constants";
 
 /** Map of action keys to Lucide icon components. */
 const ACTION_ICONS: Record<QuickActionKey, React.ReactNode> = {

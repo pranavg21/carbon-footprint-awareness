@@ -18,8 +18,7 @@ import {
 } from "lucide-react";
 import { useCarbonStore } from "../../store/carbon-store";
 import { GlassCard } from "../shared/GlassCard";
-import { CATEGORY_COLORS, CATEGORY_LABELS } from "../../lib/constants";
-import type { EmissionCategory } from "../../lib/constants";
+import { CATEGORY_COLORS, CATEGORY_LABELS, type EmissionCategory } from "../../lib/constants";
 import type { NudgeCard as NudgeCardType } from "../../lib/schemas";
 import { getTopCategory } from "../../lib/seed-data";
 
