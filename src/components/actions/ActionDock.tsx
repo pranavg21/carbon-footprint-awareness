@@ -1,11 +1,4 @@
-/**
- * Primary action dock for quick eco-action logging and custom logs.
- *
- * Provides quick-action buttons and a collapsible custom log form.
- * Buttons, icons, and style constants are imported from action-styles.
- *
- * @module ActionDock
- */
+/** Primary action dock for quick eco-action logging and custom logs. @module ActionDock */
 
 import React, { useState, useCallback } from "react";
 import { useCarbonStore } from "../../store/carbon-store";

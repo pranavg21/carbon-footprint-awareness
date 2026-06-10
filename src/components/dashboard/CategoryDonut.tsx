@@ -1,12 +1,4 @@
-/**
- * Category donut chart — custom SVG implementation.
- *
- * Renders a beautiful animated donut chart with smooth arc segments,
- * interactive hover states, and an icon-based legend. No external
- * charting library needed — full control over every pixel.
- *
- * @module CategoryDonut
- */
+/** Category donut chart — custom SVG implementation with arc segments, hover states, and icon legend. @module CategoryDonut */
 
 import React, { useState, useMemo, useCallback } from "react";
 import { useCarbonStore } from "../../store/carbon-store";

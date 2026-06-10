@@ -1,11 +1,4 @@
-/**
- * GitHub-style streak heatmap component.
- *
- * Uses CSS Grid with `auto-fit` columns so cells expand to fill
- * the full container width. No fixed pixel sizes. No dead space.
- *
- * @module StreakHeatmap
- */
+/** GitHub-style streak heatmap with CSS Grid auto-fit columns. @module StreakHeatmap */
 
 import React, { useMemo } from "react";
 import { useCarbonStore } from "../../store/carbon-store";

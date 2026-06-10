@@ -1,12 +1,4 @@
-/**
- * Seed data generator for the CarbonTrack platform.
- *
- * Creates realistic initial state with 30 days of variance
- * to populate the heatmap, charts, and score on first load.
- * All generated data conforms to Zod schemas.
- *
- * @module seed-data
- */
+/** Seed data generator — creates realistic 30-day initial state. @module seed-data */
 
 import type { ActionLogEntry, DailyLog, CategoryBreakdown } from "./schemas";
 import {

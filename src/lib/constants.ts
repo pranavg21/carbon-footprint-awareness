@@ -1,11 +1,4 @@
-/**
- * Application-wide constants for the CarbonTrack platform.
- *
- * All magic numbers are extracted here as named constants to satisfy
- * code quality requirements. Grouped by domain concern.
- *
- * @module constants
- */
+/** Application-wide constants for the CarbonTrack platform. @module constants */
 
 // ── Scoring ─────────────────────────────────────────────────────────
 

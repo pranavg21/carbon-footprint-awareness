@@ -1,13 +1,4 @@
-/**
- * Interactive Gemini AI search bar for eco-questions.
- *
- * Provides a prominent "Ask Gemini" input where users can type
- * sustainability questions and receive AI-powered responses.
- * Includes loading states, markdown-like formatting, and
- * graceful demo fallback when the API is rate-limited.
- *
- * @module GeminiChat
- */
+/** Interactive Gemini AI search bar for eco-questions with demo fallback. @module GeminiChat */
 
 import { useState, useCallback, useRef } from "react";
 import { Sparkles, Send, Loader2, X, Bot } from "lucide-react";
