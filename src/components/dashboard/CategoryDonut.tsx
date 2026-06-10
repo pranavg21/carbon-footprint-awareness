@@ -13,83 +13,10 @@ import { useCarbonStore } from "../../store/carbon-store";
 import { CATEGORY_COLORS, CATEGORY_LABELS, EMISSION_CATEGORIES, type EmissionCategory } from "../../lib/constants";
 import { GlassCard } from "../shared/GlassCard";
 import { CATEGORY_ICONS_SM } from "../../lib/category-icons";
-
-
-
-/** SVG donut configuration. */
-const DONUT_SIZE = 200;
-const DONUT_CENTER = DONUT_SIZE / 2;
-const DONUT_OUTER_RADIUS = 88;
-const DONUT_INNER_RADIUS = 58;
-const SEGMENT_GAP_DEGREES = 3;
-
-/** Shape for a computed arc segment. */
-interface ArcSegment {
-  readonly category: EmissionCategory;
-  readonly value: number;
-  readonly percentage: number;
-  readonly startAngle: number;
-  readonly endAngle: number;
-  readonly path: string;
-  readonly color: string;
-}
-
-/**
- * Converts polar coordinates to SVG cartesian coordinates.
- *
- * @param cx - Center X
- * @param cy - Center Y
- * @param radius - Arc radius
- * @param angleDeg - Angle in degrees
- * @returns Cartesian x, y point
- */
-function polarToCartesian(
-  cx: number,
-  cy: number,
-  radius: number,
-  angleDeg: number
-): { x: number; y: number } {
-  const angleRad = ((angleDeg - 90) * Math.PI) / 180;
-  return {
-    x: cx + radius * Math.cos(angleRad),
-    y: cy + radius * Math.sin(angleRad),
-  };
-}
-
-/**
- * Generates an SVG arc path string for a donut segment.
- *
- * @param cx - Center X
- * @param cy - Center Y
- * @param outerR - Outer radius
- * @param innerR - Inner radius
- * @param startAngle - Start angle in degrees
- * @param endAngle - End angle in degrees
- * @returns SVG path d-string
- */
-function describeArc(
-  cx: number,
-  cy: number,
-  outerR: number,
-  innerR: number,
-  startAngle: number,
-  endAngle: number
-): string {
-  const outerStart = polarToCartesian(cx, cy, outerR, startAngle);
-  const outerEnd = polarToCartesian(cx, cy, outerR, endAngle);
-  const innerStart = polarToCartesian(cx, cy, innerR, endAngle);
-  const innerEnd = polarToCartesian(cx, cy, innerR, startAngle);
-
-  const arcSweep = endAngle - startAngle > 180 ? 1 : 0;
-
-  return [
-    `M ${outerStart.x} ${outerStart.y}`,
-    `A ${outerR} ${outerR} 0 ${arcSweep} 1 ${outerEnd.x} ${outerEnd.y}`,
-    `L ${innerStart.x} ${innerStart.y}`,
-    `A ${innerR} ${innerR} 0 ${arcSweep} 0 ${innerEnd.x} ${innerEnd.y}`,
-    "Z",
-  ].join(" ");
-}
+import {
+  DONUT_SIZE, DONUT_CENTER, DONUT_OUTER_RADIUS, DONUT_INNER_RADIUS,
+  SEGMENT_GAP_DEGREES, describeArc, type ArcSegment,
+} from "./donut-geometry";
 
 /**
  * Donut chart showing emission breakdown by category.

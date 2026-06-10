@@ -9,13 +9,13 @@
  */
 
 import React, { useState, useCallback } from "react";
-import { Settings, Download, Trash2, Shield, Moon, Zap, LogIn, LogOut, User } from "lucide-react";
+import { Settings, Download, Trash2, Shield, Moon, LogIn, LogOut, User } from "lucide-react";
 import { useCarbonStore } from "../../store/carbon-store";
 import { useToastStore } from "../../hooks/useToast";
 import { GlassCard } from "../shared/GlassCard";
 import { signInWithGoogle, signOutUser, onAuthChange, type User as FirebaseUser } from "../../lib/firebase";
-import { isGeminiLive } from "../../lib/gemini";
 import { downloadAsJSON } from "../../lib/export";
+import { IntegrationStatus } from "./IntegrationStatus";
 
 /**
  * Settings page with data management, auth, and preferences.
@@ -184,50 +184,7 @@ export function SettingsPage(): React.JSX.Element {
       </GlassCard>
 
       {/* Integrations Status */}
-      <GlassCard>
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-          <Zap className="w-4 h-4 text-eco-lime" aria-hidden="true" />
-          Integrations
-        </h3>
-
-        <div className="space-y-3">
-          {/* Cloud Run */}
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm text-slate-300">Google Cloud Run</span>
-            <span className="text-[10px] font-bold text-eco-mint bg-eco-mint/12 px-2 py-0.5 rounded-full">Active</span>
-          </div>
-
-          {/* Cloud Logging */}
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm text-slate-300">Cloud Logging (JSON)</span>
-            <span className="text-[10px] font-bold text-eco-mint bg-eco-mint/12 px-2 py-0.5 rounded-full">Active</span>
-          </div>
-
-          {/* Firebase */}
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm text-slate-300">Firebase (Auth/Firestore/Analytics)</span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              currentUser
-                ? "text-eco-mint bg-eco-mint/12"
-                : "text-eco-amber bg-eco-amber/12"
-            }`}>
-              {currentUser ? "Connected" : "Available"}
-            </span>
-          </div>
-
-          {/* Gemini */}
-          <div className="flex items-center justify-between py-2">
-            <span className="text-sm text-slate-300">Google Gemini AI</span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              isGeminiLive()
-                ? "text-eco-violet bg-eco-violet/12"
-                : "text-eco-amber bg-eco-amber/12"
-            }`}>
-              {isGeminiLive() ? "Live" : "Demo Mode"}
-            </span>
-          </div>
-        </div>
-      </GlassCard>
+      <IntegrationStatus isAuthenticated={currentUser !== null} />
 
       {/* Accessibility */}
       <GlassCard>

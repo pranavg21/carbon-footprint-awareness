@@ -1,9 +1,9 @@
 /**
  * Firebase integration for the CarbonTrack platform.
  *
- * Initializes Firebase App, Firestore (cloud persistence),
- * Firebase Analytics (event tracking), and Firebase Auth
- * (Google sign-in). All Google Cloud services are consolidated here.
+ * Initializes Firebase App, Firestore, Analytics, and Auth.
+ * Auth and analytics operations are in firebase-auth.ts and
+ * firebase-analytics.ts respectively.
  *
  * @module firebase
  */
@@ -19,29 +19,19 @@ import {
   limit,
   type Firestore,
 } from "firebase/firestore";
-import {
-  getAnalytics,
-  logEvent,
-  type Analytics,
-} from "firebase/analytics";
-import {
-  getAuth,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  type Auth,
-  type User,
-} from "firebase/auth";
+import { getAnalytics } from "firebase/analytics";
+import { getAuth } from "firebase/auth";
 import { logger } from "./logger";
 import type { ActionLogEntry } from "./schemas";
+import { createAnalyticsTracker } from "./firebase-analytics";
+import { createAuthOperations, type User } from "./firebase-auth";
 
-// ── Firebase Configuration ──────────────────────────────────────────
+// Re-export User type for consumers
+export type { User };
 
-/**
- * Firebase project configuration.
- * Values sourced from environment variables for security.
- */
+// ── Configuration ───────────────────────────────────────────────────
+
+/** Firebase project configuration from environment variables. */
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? "",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? "",
@@ -61,27 +51,27 @@ const isFirebaseConfigured: boolean =
 /** Firestore database instance. */
 let db: Firestore | null = null;
 
-/** Firebase Analytics instance. */
-let analytics: Analytics | null = null;
+/** Analytics tracker (bound after init). */
+let tracker = createAnalyticsTracker(null);
 
-/** Firebase Auth instance. */
-let auth: Auth | null = null;
-
-/** Google Auth provider. */
-const googleProvider = new GoogleAuthProvider();
+/** Auth operations (bound after init). */
+let authOps = createAuthOperations(null);
 
 if (isFirebaseConfigured) {
   try {
     const firebaseApp: FirebaseApp = initializeApp(firebaseConfig);
     db = getFirestore(firebaseApp);
-    auth = getAuth(firebaseApp);
 
-    // Analytics only works in browser, not SSR
-    if (typeof window !== "undefined") {
-      analytics = getAnalytics(firebaseApp);
-    }
+    const auth = getAuth(firebaseApp);
+    const analytics =
+      typeof window !== "undefined" ? getAnalytics(firebaseApp) : null;
 
-    logger.info("Firebase initialized successfully", {
+    tracker = createAnalyticsTracker(analytics);
+    authOps = createAuthOperations(auth, (method) => {
+      tracker.trackLogin(method);
+    });
+
+    logger.info("Firebase initialized", {
       component: "firebase",
       projectId: firebaseConfig.projectId,
     });
@@ -92,7 +82,7 @@ if (isFirebaseConfigured) {
     });
   }
 } else {
-  logger.warn("Firebase not configured — running in offline mode", {
+  logger.warn("Firebase not configured — offline mode", {
     component: "firebase",
   });
 }
@@ -104,10 +94,8 @@ const ACTIONS_COLLECTION = "action_logs" as const;
 
 /**
  * Persists an action log entry to Firestore.
- * No-op if Firebase is not configured.
  *
  * @param entry - The action log entry to persist
- * @returns Promise that resolves when write completes
  */
 export async function persistActionToFirestore(
   entry: ActionLogEntry
@@ -118,10 +106,6 @@ export async function persistActionToFirestore(
     await addDoc(collection(db, ACTIONS_COLLECTION), {
       ...entry,
       createdAt: new Date().toISOString(),
-    });
-    logger.debug("Action persisted to Firestore", {
-      component: "firebase",
-      actionId: entry.id,
     });
   } catch (error: unknown) {
     logger.error("Firestore write failed", {
@@ -134,8 +118,8 @@ export async function persistActionToFirestore(
 /**
  * Fetches recent action logs from Firestore.
  *
- * @param maxResults - Maximum number of results to return
- * @returns Array of action log entries from Firestore
+ * @param maxResults - Maximum results to return
+ * @returns Action log entries from Firestore
  */
 export async function fetchRecentActions(
   maxResults: number = 50
@@ -159,124 +143,29 @@ export async function fetchRecentActions(
   }
 }
 
-// ── Analytics Operations ────────────────────────────────────────────
+// ── Re-exports (delegated to sub-modules) ───────────────────────────
 
-/**
- * Tracks an eco-action event in Firebase Analytics.
- *
- * @param actionType - The type of action logged
- * @param category - The emission category
- * @param points - Points earned
- */
-export function trackActionEvent(
-  actionType: string,
-  category: string,
-  points: number
-): void {
-  if (!analytics) return;
+/** @see {@link createAnalyticsTracker} */
+export const trackActionEvent = (
+  ...args: Parameters<typeof tracker.trackActionEvent>
+): void => tracker.trackActionEvent(...args);
 
-  logEvent(analytics, "eco_action_logged", {
-    action_type: actionType,
-    category,
-    points,
-  });
-}
+/** @see {@link createAnalyticsTracker} */
+export const trackPageView = (
+  ...args: Parameters<typeof tracker.trackPageView>
+): void => tracker.trackPageView(...args);
 
-/**
- * Tracks a page view in Firebase Analytics.
- *
- * @param pageName - Name of the page viewed
- */
-export function trackPageView(pageName: string): void {
-  if (!analytics) return;
+/** @see {@link createAnalyticsTracker} */
+export const trackExportEvent = (): void => tracker.trackExportEvent();
 
-  logEvent(analytics, "page_view", {
-    page_title: pageName,
-  });
-}
+/** @see {@link createAuthOperations} */
+export const signInWithGoogle = (): Promise<User | null> =>
+  authOps.signInWithGoogle();
 
-/**
- * Tracks a data export event in Firebase Analytics.
- */
-export function trackExportEvent(): void {
-  if (!analytics) return;
+/** @see {@link createAuthOperations} */
+export const signOutUser = (): Promise<void> => authOps.signOutUser();
 
-  logEvent(analytics, "data_exported", {
-    timestamp: new Date().toISOString(),
-  });
-}
-
-// ── Auth Operations ─────────────────────────────────────────────────
-
-/**
- * Signs in the user with Google popup authentication.
- *
- * @returns The authenticated user, or null on failure
- */
-export async function signInWithGoogle(): Promise<User | null> {
-  if (!auth) {
-    logger.warn("Auth not available — Firebase not configured", {
-      component: "firebase",
-    });
-    return null;
-  }
-
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    logger.info("User signed in via Google", {
-      component: "firebase",
-      uid: result.user.uid,
-    });
-
-    if (analytics) {
-      logEvent(analytics, "login", { method: "google" });
-    }
-
-    return result.user;
-  } catch (error: unknown) {
-    logger.error("Google sign-in failed", {
-      component: "firebase",
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return null;
-  }
-}
-
-/**
- * Signs out the current user.
- *
- * @returns Promise that resolves when sign-out completes
- */
-export async function signOutUser(): Promise<void> {
-  if (!auth) return;
-
-  try {
-    await signOut(auth);
-    logger.info("User signed out", { component: "firebase" });
-  } catch (error: unknown) {
-    logger.error("Sign-out failed", {
-      component: "firebase",
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-}
-
-/**
- * Subscribes to authentication state changes.
- *
- * @param callback - Function called with user or null on auth change
- * @returns Unsubscribe function
- */
-export function onAuthChange(
+/** @see {@link createAuthOperations} */
+export const onAuthChange = (
   callback: (user: User | null) => void
-): () => void {
-  if (!auth) {
-    callback(null);
-    return (): void => {};
-  }
-
-  return onAuthStateChanged(auth, callback);
-}
-
-/** Re-export User type for consumers. */
-export type { User } from "firebase/auth";
+): (() => void) => authOps.onAuthChange(callback);

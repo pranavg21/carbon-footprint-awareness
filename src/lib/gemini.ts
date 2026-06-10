@@ -12,7 +12,8 @@ import { GoogleGenerativeAI, type GenerativeModel } from "@google/generative-ai"
 import type { CategoryBreakdown, NudgeCard } from "./schemas";
 import { CATEGORY_LABELS, EMISSION_CATEGORIES, type EmissionCategory } from "./constants";
 import { logger } from "./logger";
-import { DEMO_TIPS, DEMO_ANSWERS, DEFAULT_DEMO_ANSWER } from "./gemini-demo-data";
+import { DEMO_TIPS } from "./gemini-demo-data";
+import { askGeminiQuestion } from "./gemini-chat";
 
 // ── Configuration ───────────────────────────────────────────────────
 
@@ -31,11 +32,7 @@ const MAX_INSIGHTS = 4 as const;
 /** Cache duration in milliseconds (5 minutes). */
 const CACHE_DURATION_MS = 300_000 as const;
 
-/** Maximum retries for rate-limited requests. */
-const MAX_RETRIES = 2 as const;
 
-/** Base retry delay in milliseconds. */
-const RETRY_DELAY_MS = 3_000 as const;
 
 // ── Model Initialization ────────────────────────────────────────────
 
@@ -246,63 +243,13 @@ export function isGeminiLive(): boolean {
   return isGeminiConfigured && model !== null;
 }
 
-// ── Interactive Chat ────────────────────────────────────────────────
-
-/** System prompt for the Gemini eco-assistant. */
-const SYSTEM_PROMPT = [
-  "You are CarbonTrack AI, an expert sustainability assistant.",
-  "Answer questions about carbon footprint reduction, eco-friendly habits,",
-  "climate science, and environmental impact. Be specific with numbers",
-  "and actionable advice. Keep responses under 150 words. Use bullet",
-  "points for lists. Always be encouraging and positive.",
-].join(" ");
-
 /**
- * Returns a contextual demo answer based on keyword matching.
- *
- * @param question - The user's question
- * @returns Demo answer string
- */
-function getDemoAnswer(question: string): string {
-  const match = DEMO_ANSWERS.find((entry) => entry.pattern.test(question));
-  return match?.answer ?? DEFAULT_DEMO_ANSWER;
-}
-
-/**
- * Asks Gemini AI a sustainability question with retry logic.
+ * Asks Gemini AI a sustainability question.
+ * Delegates to gemini-chat module with the current model instance.
  *
  * @param question - The user's question
  * @returns AI-generated response string
  */
 export async function askGemini(question: string): Promise<string> {
-  if (!model) {
-    return getDemoAnswer(question);
-  }
-
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const result = await model.generateContent(
-        `${SYSTEM_PROMPT}\n\nUser question: ${question}`
-      );
-      return result.response.text();
-    } catch (error: unknown) {
-      const isRateLimit =
-        error instanceof Error && error.message.includes("429");
-
-      if (isRateLimit && attempt < MAX_RETRIES) {
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, RETRY_DELAY_MS * (attempt + 1));
-        });
-        continue;
-      }
-
-      logger.error("Gemini chat failed", {
-        component: "gemini",
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return getDemoAnswer(question);
-    }
-  }
-
-  return getDemoAnswer(question);
+  return askGeminiQuestion(model, question);
 }
