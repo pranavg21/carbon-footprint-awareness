@@ -9,78 +9,13 @@
  */
 
 import React, { useState } from "react";
-import {
-  Leaf,
-  LayoutDashboard,
-  Activity,
-  Trophy,
-  Users,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Leaf, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useCarbonStore } from "../../store/carbon-store";
-import { ECO_LEVEL_THRESHOLDS } from "../../lib/constants";
-
-/** Valid navigation view identifiers. */
-export type ViewId = "dashboard" | "activity" | "achievements" | "community" | "settings";
-
-/** Shape for a navigation item. */
-interface NavItem {
-  readonly id: ViewId;
-  readonly label: string;
-  readonly icon: React.ReactNode;
-  readonly badge?: string;
-}
-
-/** Navigation items configuration. */
-const NAV_ITEMS: ReadonlyArray<NavItem> = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: <LayoutDashboard className="w-5 h-5" />,
-  },
-  {
-    id: "activity",
-    label: "Activity Log",
-    icon: <Activity className="w-5 h-5" />,
-  },
-  {
-    id: "achievements",
-    label: "Achievements",
-    icon: <Trophy className="w-5 h-5" />,
-    badge: "3",
-  },
-  {
-    id: "community",
-    label: "Community",
-    icon: <Users className="w-5 h-5" />,
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: <Settings className="w-5 h-5" />,
-  },
-];
-
-/** Sidebar width values as CSS strings. */
-const WIDTH_EXPANDED = "200px";
-const WIDTH_COLLAPSED = "64px";
-
-/**
- * Computes an eco-hero level label based on point thresholds.
- *
- * @param points - Current total eco-points
- * @returns Human-readable level string
- */
-function getEcoLevel(points: number): string {
-  if (points >= ECO_LEVEL_THRESHOLDS.LEVEL_5) return "Lvl 5 Green Legend";
-  if (points >= ECO_LEVEL_THRESHOLDS.LEVEL_4) return "Lvl 4 Earth Guardian";
-  if (points >= ECO_LEVEL_THRESHOLDS.LEVEL_3) return "Lvl 3 Planet Friend";
-  if (points >= ECO_LEVEL_THRESHOLDS.LEVEL_2) return "Lvl 2 Carbon Crusader";
-  return "Lvl 1 Eco Novice";
-}
+import {
+  NAV_ITEMS, WIDTH_EXPANDED, WIDTH_COLLAPSED,
+  getEcoLevel, type ViewId,
+} from "./sidebar-config";
 
 /** Props for the Sidebar component. */
 interface SidebarProps {
@@ -239,3 +174,4 @@ export function Sidebar({ activeView, onNavigate }: SidebarProps): React.JSX.Ele
 /** Returns the current sidebar width for layout offset. */
 export const SIDEBAR_WIDTH_EXPANDED = WIDTH_EXPANDED;
 export const SIDEBAR_WIDTH_COLLAPSED = WIDTH_COLLAPSED;
+export type { ViewId };

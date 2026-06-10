@@ -11,57 +11,12 @@ import React, { useMemo } from "react";
 import { useCarbonStore } from "../../store/carbon-store";
 import { GlassCard } from "../shared/GlassCard";
 import { Activity } from "lucide-react";
-import {
-  HEATMAP_DAYS,
-  HEATMAP_INTENSITY_LEVELS,
-  HEATMAP_MAX_ACTIONS_PER_DAY,
-} from "../../lib/constants";
+import { HEATMAP_DAYS } from "../../lib/constants";
 import { getDateDaysAgo, formatShortDate, getDayOfWeek } from "../../lib/utils";
-
-/** Color values for heatmap intensity levels (0 = none). */
-const INTENSITY_COLORS: ReadonlyArray<string> = [
-  "rgba(30, 45, 82, 0.4)",
-  "rgba(52, 211, 153, 0.15)",
-  "rgba(52, 211, 153, 0.35)",
-  "rgba(52, 211, 153, 0.6)",
-  "#34d399",
-] as const;
-
-/** Day labels for the Y-axis. */
-const DAY_LABELS: ReadonlyArray<string> = [
-  "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
-] as const;
-
-/** Month name abbreviations. */
-const MONTH_NAMES: ReadonlyArray<string> = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-] as const;
-
-/** Shape for individual heatmap cell data. */
-interface HeatmapCellData {
-  readonly date: string;
-  readonly actionCount: number;
-  readonly intensity: number;
-  readonly dayOfWeek: number;
-  readonly month: number;
-  readonly day: number;
-}
-
-/**
- * Computes intensity level from action count.
- *
- * @param actionCount - Number of actions on the day
- * @returns Intensity level (0 to HEATMAP_INTENSITY_LEVELS)
- */
-function getIntensity(actionCount: number): number {
-  if (actionCount === 0) return 0;
-  const step = HEATMAP_MAX_ACTIONS_PER_DAY / HEATMAP_INTENSITY_LEVELS;
-  return Math.min(
-    Math.ceil(actionCount / step),
-    HEATMAP_INTENSITY_LEVELS
-  );
-}
+import {
+  INTENSITY_COLORS, DAY_LABELS, MONTH_NAMES,
+  getIntensity, type HeatmapCellData,
+} from "./heatmap-constants";
 
 /**
  * Streak heatmap showing 30-day activity matrix with month labels.

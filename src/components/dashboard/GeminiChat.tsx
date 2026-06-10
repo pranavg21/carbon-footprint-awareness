@@ -14,6 +14,7 @@ import { Sparkles, Send, Loader2, X, Bot } from "lucide-react";
 import { askGemini, isGeminiLive } from "../../lib/gemini";
 import { sanitizeInput } from "../../lib/sanitize";
 import { logger } from "../../lib/logger";
+import { formatAnswer } from "./chat-formatter";
 
 /** Maximum character length for questions. */
 const MAX_QUESTION_LENGTH = 300 as const;
@@ -39,11 +40,7 @@ export default function GeminiChat(): React.JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null);
   const geminiLive = isGeminiLive();
 
-  /**
-   * Handles form submission — sends the question to Gemini.
-   *
-   * @param e - Form submit event
-   */
+  /** Handles form submission — sends the question to Gemini. */
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
@@ -77,11 +74,7 @@ export default function GeminiChat(): React.JSX.Element {
     [question, isLoading]
   );
 
-  /**
-   * Handles quick question click.
-   *
-   * @param q - The quick question text
-   */
+  /** Handles quick question click. */
   const handleQuickQuestion = useCallback(
     (q: string): void => {
       setQuestion(q);
@@ -90,65 +83,13 @@ export default function GeminiChat(): React.JSX.Element {
     []
   );
 
-  /**
-   * Clears the current answer and resets the chat.
-   */
+  /** Clears the current answer and resets the chat. */
   const handleClear = useCallback((): void => {
     setAnswer("");
     setQuestion("");
     setIsOpen(false);
     inputRef.current?.focus();
   }, []);
-
-  /**
-   * Parses a line and renders bold text safely without dangerouslySetInnerHTML.
-   *
-   * @param line - Raw text line
-   * @returns Array of React nodes with bold segments wrapped in strong tags
-   */
-  const renderBoldText = useCallback((line: string): ReadonlyArray<React.ReactNode> => {
-    const parts = line.split(/\*\*(.+?)\*\*/g);
-    return parts.map((part, idx): React.ReactNode =>
-      idx % 2 === 1 ? (
-        <strong key={idx} className="text-emerald-300 font-semibold">
-          {part}
-        </strong>
-      ) : (
-        part
-      )
-    );
-  }, []);
-
-  /**
-   * Formats the answer text with basic markdown-like styling.
-   * Uses safe React rendering — no dangerouslySetInnerHTML.
-   *
-   * @param text - Raw answer text
-   * @returns Formatted JSX
-   */
-  const formatAnswer = useCallback((text: string): React.JSX.Element => {
-    const lines = text.split("\n");
-    return (
-      <div className="space-y-2">
-        {lines.map((line, i) => {
-          const key = `line-${i}`;
-          if (line.trim().length === 0) return <br key={key} />;
-
-          const isBullet =
-            line.trim().startsWith("•") || line.trim().startsWith("-");
-
-          return (
-            <p
-              key={key}
-              className={`text-sm text-slate-300${isBullet ? " pl-2" : ""}`}
-            >
-              {renderBoldText(line)}
-            </p>
-          );
-        })}
-      </div>
-    );
-  }, [renderBoldText]);
 
   return (
     <section
