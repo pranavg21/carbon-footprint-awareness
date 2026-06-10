@@ -16,7 +16,7 @@ import { CATEGORY_COLORS, CATEGORY_LABELS } from "../../lib/constants";
 import type { NudgeCard as NudgeCardType } from "../../lib/schemas";
 import { getTopCategory } from "../../lib/seed-data";
 import { CATEGORY_ICONS_MD } from "../../lib/category-icons";
-import { generateGeminiInsights, isGeminiAvailable } from "../../lib/gemini";
+import { generateGeminiInsights, isGeminiAvailable, isGeminiLive } from "../../lib/gemini";
 
 /** Props for the individual NudgeCard component. */
 interface NudgeCardProps {
@@ -116,7 +116,7 @@ export function NudgeFeed(): React.JSX.Element {
         </h2>
         {isAiPowered ? (
           <span className="text-[9px] font-bold text-eco-violet bg-eco-violet/12 px-2 py-0.5 rounded-full border border-eco-violet/25 uppercase tracking-wider">
-            Gemini AI
+            {isGeminiLive() ? "Gemini AI Live" : "Gemini AI"}
           </span>
         ) : null}
         {isAiLoading ? (

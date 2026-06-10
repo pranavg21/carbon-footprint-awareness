@@ -14,7 +14,7 @@ import { useCarbonStore } from "../../store/carbon-store";
 import { useToastStore } from "../../hooks/useToast";
 import { GlassCard } from "../shared/GlassCard";
 import { signInWithGoogle, signOutUser, onAuthChange, type User as FirebaseUser } from "../../lib/firebase";
-import { isGeminiAvailable } from "../../lib/gemini";
+import { isGeminiLive } from "../../lib/gemini";
 import { logger } from "../../lib/logger";
 
 /**
@@ -226,11 +226,11 @@ export function SettingsPage(): React.JSX.Element {
           <div className="flex items-center justify-between py-2">
             <span className="text-sm text-slate-300">Google Gemini AI</span>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              isGeminiAvailable()
+              isGeminiLive()
                 ? "text-eco-violet bg-eco-violet/12"
                 : "text-eco-amber bg-eco-amber/12"
             }`}>
-              {isGeminiAvailable() ? "Live" : "Demo Mode"}
+              {isGeminiLive() ? "Live" : "Demo Mode"}
             </span>
           </div>
         </div>
