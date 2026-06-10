@@ -15,7 +15,7 @@ import { useToastStore } from "../../hooks/useToast";
 import { GlassCard } from "../shared/GlassCard";
 import { signInWithGoogle, signOutUser, onAuthChange, type User as FirebaseUser } from "../../lib/firebase";
 import { isGeminiLive } from "../../lib/gemini";
-import { logger } from "../../lib/logger";
+import { downloadAsJSON } from "../../lib/export";
 
 /**
  * Settings page with data management, auth, and preferences.
@@ -37,26 +37,19 @@ export function SettingsPage(): React.JSX.Element {
     return unsubscribe;
   }, []);
 
-  /** Exports data as JSON file download. */
+  /** Exports data using shared utility. */
   const handleExport = useCallback((): void => {
     const state = useCarbonStore.getState();
-    const exportData = {
-      version: "1.0.0",
-      exportedAt: new Date().toISOString(),
-      totalScore: state.totalScore,
-      categoryBreakdown: state.categoryBreakdown,
-      actionLog: state.actionLog,
-      dailyLogs: state.dailyLogs,
-    };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `carbontrack-export-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadAsJSON(
+      {
+        totalScore: state.totalScore,
+        categoryBreakdown: state.categoryBreakdown,
+        actionLog: state.actionLog,
+        dailyLogs: state.dailyLogs,
+      },
+      "SettingsPage"
+    );
     addToast("📦 Data exported successfully", "success");
-    logger.info("Data exported from settings", { component: "SettingsPage" });
   }, [addToast]);
 
   /** Handles store reset with confirmation. */

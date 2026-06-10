@@ -11,40 +11,8 @@ import React, { useCallback } from "react";
 import { Download, Flame } from "lucide-react";
 import { useCarbonStore } from "../../store/carbon-store";
 import { useToastStore } from "../../hooks/useToast";
-import { logger } from "../../lib/logger";
+import { downloadAsJSON } from "../../lib/export";
 import { trackExportEvent } from "../../lib/firebase";
-
-/**
- * Exports the current store state as a JSON file download.
- *
- * @param state - Complete carbon store state snapshot
- */
-function exportData(state: {
-  totalScore: number;
-  monthlyTarget: number;
-  categoryBreakdown: Record<string, number>;
-  actionLog: ReadonlyArray<unknown>;
-  currentStreak: number;
-  longestStreak: number;
-}): void {
-  const data = {
-    exportedAt: new Date().toISOString(),
-    version: "1.0.0",
-    ...state,
-  };
-
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `carbontrack-export-${new Date().toISOString().split("T")[0] ?? "data"}.json`;
-  anchor.click();
-  URL.revokeObjectURL(url);
-  logger.info("Data exported", { component: "Header" });
-  trackExportEvent();
-}
 
 /**
  * Top bar with page context and utility actions.
@@ -52,18 +20,26 @@ function exportData(state: {
  * @returns Header element
  */
 export function Header(): React.JSX.Element {
-  const totalScore = useCarbonStore((s) => s.totalScore);
-  const monthlyTarget = useCarbonStore((s) => s.monthlyTarget);
-  const categoryBreakdown = useCarbonStore((s) => s.categoryBreakdown);
-  const actionLog = useCarbonStore((s) => s.actionLog);
   const currentStreak = useCarbonStore((s) => s.currentStreak);
-  const longestStreak = useCarbonStore((s) => s.longestStreak);
   const addToast = useToastStore((s) => s.addToast);
 
+  /** Exports all store data and shows a confirmation toast. */
   const handleExport = useCallback((): void => {
-    exportData({ totalScore, monthlyTarget, categoryBreakdown, actionLog, currentStreak, longestStreak });
+    const state = useCarbonStore.getState();
+    downloadAsJSON(
+      {
+        totalScore: state.totalScore,
+        monthlyTarget: state.monthlyTarget,
+        categoryBreakdown: state.categoryBreakdown,
+        actionLog: state.actionLog,
+        currentStreak: state.currentStreak,
+        longestStreak: state.longestStreak,
+      },
+      "Header"
+    );
+    trackExportEvent();
     addToast("📦 Data exported successfully!", "info");
-  }, [totalScore, monthlyTarget, categoryBreakdown, actionLog, currentStreak, longestStreak, addToast]);
+  }, [addToast]);
 
   return (
     <header

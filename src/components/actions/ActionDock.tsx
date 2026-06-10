@@ -1,80 +1,30 @@
 /**
  * Primary action dock for quick eco-action logging and custom logs.
  *
- * Buttons are taller (60px), content is centered within each button,
- * with consistent left/right padding. Vibrant hover glow + press animations.
- * Includes a collapsible, fully accessible custom log form.
+ * Provides quick-action buttons and a collapsible custom log form.
+ * Buttons, icons, and style constants are imported from action-styles.
  *
  * @module ActionDock
  */
 
 import React, { useState, useCallback } from "react";
-import { Utensils, Bus, Zap, Recycle } from "lucide-react";
 import { useCarbonStore } from "../../store/carbon-store";
 import { useToastStore } from "../../hooks/useToast";
 import { QUICK_ACTIONS, type QuickActionKey, type EmissionCategory } from "../../lib/constants";
 import { emissionCategorySchema } from "../../lib/schemas";
 import { sanitizeInput } from "../../lib/sanitize";
 import { z } from "zod";
-
-/** Map of action keys to Lucide icon components. */
-const ACTION_ICONS: Record<QuickActionKey, React.ReactNode> = {
-  PLANT_MEAL: <Utensils className="w-5 h-5" aria-hidden="true" />,
-  PUBLIC_TRANSIT: <Bus className="w-5 h-5" aria-hidden="true" />,
-  RENEWABLE_ENERGY: <Zap className="w-5 h-5" aria-hidden="true" />,
-  ZERO_WASTE: <Recycle className="w-5 h-5" aria-hidden="true" />,
-};
-
-/** Vibrant color styles for each action button. */
-const ACTION_STYLES: Record<QuickActionKey, {
-  readonly bg: string;
-  readonly hoverBg: string;
-  readonly glow: string;
-  readonly text: string;
-}> = {
-  PLANT_MEAL: {
-    bg: "rgba(34, 197, 94, 0.12)",
-    hoverBg: "rgba(34, 197, 94, 0.22)",
-    glow: "0 0 20px rgba(34, 197, 94, 0.25)",
-    text: "#22c55e",
-  },
-  PUBLIC_TRANSIT: {
-    bg: "rgba(34, 211, 238, 0.12)",
-    hoverBg: "rgba(34, 211, 238, 0.22)",
-    glow: "0 0 20px rgba(34, 211, 238, 0.25)",
-    text: "#22d3ee",
-  },
-  RENEWABLE_ENERGY: {
-    bg: "rgba(251, 191, 36, 0.12)",
-    hoverBg: "rgba(251, 191, 36, 0.22)",
-    glow: "0 0 20px rgba(251, 191, 36, 0.25)",
-    text: "#fbbf24",
-  },
-  ZERO_WASTE: {
-    bg: "rgba(251, 113, 133, 0.12)",
-    hoverBg: "rgba(251, 113, 133, 0.22)",
-    glow: "0 0 20px rgba(251, 113, 133, 0.25)",
-    text: "#fb7185",
-  },
-};
-
-/** All action keys for iteration. */
-const ACTION_KEYS: ReadonlyArray<QuickActionKey> = [
-  "PLANT_MEAL",
-  "PUBLIC_TRANSIT",
-  "RENEWABLE_ENERGY",
-  "ZERO_WASTE",
-] as const;
+import { ACTION_ICONS, ACTION_STYLES, ACTION_KEYS } from "./action-styles";
 
 /** Schema for validating custom eco-actions. */
 const customActionSchema = z.object({
   category: z.enum(["transport", "diet", "home", "shopping"]),
-  points: z.number().int().min(1, "Points must be at least 1").max(100, "Points cannot exceed 100"),
-  description: z.string().min(3, "Description must be at least 3 characters").max(50, "Description cannot exceed 50 characters"),
+  points: z.number().int().min(1, "Min 1").max(100, "Max 100"),
+  description: z.string().min(3, "Min 3 chars").max(50, "Max 50 chars"),
 });
 
 /**
- * Inline action dock — primary interaction surface for logging actions.
+ * Inline action dock — primary interaction surface for logging.
  *
  * @returns Action dock element
  */
@@ -89,46 +39,64 @@ export function ActionDock(): React.JSX.Element {
   const [description, setDescription] = useState("");
   const [validationError, setValidationError] = useState("");
 
+  /** Logs a quick action and shows toast. */
   const handleAction = useCallback(
     (key: QuickActionKey): void => {
       logAction(key);
       const action = QUICK_ACTIONS[key];
-      addToast(
-        `${action.emoji} ${action.label} logged! +${action.points} pts`,
-        "success"
-      );
+      addToast(`${action.emoji} ${action.label} logged! +${action.points} pts`, "success");
     },
     [logAction, addToast]
   );
 
+  /** Handles custom form submission with Zod validation. */
   const handleCustomSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>): void => {
       e.preventDefault();
       setValidationError("");
 
-      const sanitizedDescription = sanitizeInput(description);
-
+      const sanitized = sanitizeInput(description);
       const result = customActionSchema.safeParse({
         category,
         points,
-        description: sanitizedDescription,
+        description: sanitized,
       });
 
       if (!result.success) {
-        const firstError = result.error.issues[0]?.message ?? "Invalid inputs";
-        setValidationError(firstError);
+        setValidationError(result.error.issues[0]?.message ?? "Invalid");
         return;
       }
 
-      logCustomAction(category, points, sanitizedDescription);
-      addToast(`🌱 Custom Action "${sanitizedDescription}" logged! +${points} pts`, "success");
-
-      // Reset form
+      logCustomAction(category, points, sanitized);
+      addToast(`🌱 "${sanitized}" logged! +${points} pts`, "success");
       setDescription("");
       setPoints(10);
       setIsCustomOpen(false);
     },
     [category, points, description, logCustomAction, addToast]
+  );
+
+  /** Toggles between quick actions and custom form. */
+  const handleToggle = useCallback((): void => {
+    setIsCustomOpen((prev) => !prev);
+    setValidationError("");
+  }, []);
+
+  /** Closes custom form and clears errors. */
+  const handleCancel = useCallback((): void => {
+    setIsCustomOpen(false);
+    setValidationError("");
+  }, []);
+
+  /** Handles category change with Zod validation. */
+  const handleCategoryChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>): void => {
+      const parsed = emissionCategorySchema.safeParse(e.target.value);
+      if (parsed.success) {
+        setCategory(parsed.data);
+      }
+    },
+    []
   );
 
   return (
@@ -139,10 +107,7 @@ export function ActionDock(): React.JSX.Element {
             Log Activity
           </h2>
           <button
-            onClick={(): void => {
-              setIsCustomOpen(!isCustomOpen);
-              setValidationError("");
-            }}
+            onClick={handleToggle}
             className="text-xs font-bold text-eco-mint hover:underline bg-transparent border-0 cursor-pointer outline-none focus:ring-1 focus:ring-eco-mint rounded px-1.5 py-0.5"
             type="button"
             aria-expanded={isCustomOpen}
@@ -160,7 +125,6 @@ export function ActionDock(): React.JSX.Element {
               </p>
             ) : null}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Category */}
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="custom-category" className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
                   Category
@@ -168,12 +132,7 @@ export function ActionDock(): React.JSX.Element {
                 <select
                   id="custom-category"
                   value={category}
-                  onChange={(e): void => {
-                    const parsed = emissionCategorySchema.safeParse(e.target.value);
-                    if (parsed.success) {
-                      setCategory(parsed.data);
-                    }
-                  }}
+                  onChange={handleCategoryChange}
                   className="bg-carbon-900 border border-glass-border rounded-xl text-xs text-white p-2.5 outline-none focus:border-eco-mint focus:ring-1 focus:ring-eco-mint transition-all"
                 >
                   <option value="transport">Transport</option>
@@ -182,8 +141,6 @@ export function ActionDock(): React.JSX.Element {
                   <option value="shopping">Shopping</option>
                 </select>
               </div>
-
-              {/* Description */}
               <div className="flex flex-col gap-1.5 sm:col-span-2">
                 <label htmlFor="custom-desc" className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
                   Description
@@ -198,9 +155,7 @@ export function ActionDock(): React.JSX.Element {
                 />
               </div>
             </div>
-
             <div className="flex items-end justify-between gap-4 mt-1">
-              {/* Points */}
               <div className="flex flex-col gap-1.5 w-32">
                 <label htmlFor="custom-points" className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
                   Impact Points
@@ -215,23 +170,11 @@ export function ActionDock(): React.JSX.Element {
                   className="bg-carbon-900 border border-glass-border rounded-xl text-xs text-white p-2.5 outline-none focus:border-eco-mint focus:ring-1 focus:ring-eco-mint transition-all"
                 />
               </div>
-
-              {/* Action Buttons */}
               <div className="flex gap-2.5">
-                <button
-                  type="button"
-                  onClick={(): void => {
-                    setIsCustomOpen(false);
-                    setValidationError("");
-                  }}
-                  className="px-4 py-2.5 border border-glass-border rounded-xl text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
+                <button type="button" onClick={handleCancel} className="px-4 py-2.5 border border-glass-border rounded-xl text-xs text-slate-400 hover:text-white transition-colors cursor-pointer">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-gradient-to-r from-eco-mint to-eco-lime rounded-xl text-xs text-carbon-950 font-bold hover:opacity-90 transition-opacity cursor-pointer focus:outline-none focus:ring-2 focus:ring-eco-mint"
-                >
+                <button type="submit" className="px-5 py-2.5 bg-gradient-to-r from-eco-mint to-eco-lime rounded-xl text-xs text-carbon-950 font-bold hover:opacity-90 transition-opacity cursor-pointer focus:outline-none focus:ring-2 focus:ring-eco-mint">
                   Log Action
                 </button>
               </div>
@@ -247,56 +190,20 @@ export function ActionDock(): React.JSX.Element {
                   key={key}
                   onClick={(): void => handleAction(key)}
                   className="action-dock-btn group flex items-center justify-center gap-3 rounded-2xl border transition-all duration-200 cursor-pointer"
-                  style={{
-                    backgroundColor: style.bg,
-                    borderColor: `${style.text}20`,
-                    padding: "14px 16px",
-                    minHeight: "60px",
-                  }}
-                  onMouseEnter={(e): void => {
-                    const el = e.currentTarget;
-                    el.style.backgroundColor = style.hoverBg;
-                    el.style.borderColor = `${style.text}40`;
-                    el.style.boxShadow = style.glow;
-                    el.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e): void => {
-                    const el = e.currentTarget;
-                    el.style.backgroundColor = style.bg;
-                    el.style.borderColor = `${style.text}20`;
-                    el.style.boxShadow = "none";
-                    el.style.transform = "translateY(0)";
-                  }}
-                  onMouseDown={(e): void => {
-                    e.currentTarget.style.transform = "scale(0.96)";
-                  }}
-                  onMouseUp={(e): void => {
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
+                  style={{ backgroundColor: style.bg, borderColor: `${style.text}20`, padding: "14px 16px", minHeight: "60px" }}
+                  onMouseEnter={(e): void => { const el = e.currentTarget; el.style.backgroundColor = style.hoverBg; el.style.borderColor = `${style.text}40`; el.style.boxShadow = style.glow; el.style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={(e): void => { const el = e.currentTarget; el.style.backgroundColor = style.bg; el.style.borderColor = `${style.text}20`; el.style.boxShadow = "none"; el.style.transform = "translateY(0)"; }}
+                  onMouseDown={(e): void => { e.currentTarget.style.transform = "scale(0.96)"; }}
+                  onMouseUp={(e): void => { e.currentTarget.style.transform = "translateY(-2px)"; }}
                   aria-label={`Log ${action.label}: earns ${action.points} points`}
                   type="button"
                 >
-                  {/* Icon bubble */}
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-                    style={{
-                      backgroundColor: `${style.text}18`,
-                      color: style.text,
-                    }}
-                  >
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110" style={{ backgroundColor: `${style.text}18`, color: style.text }}>
                     {ACTION_ICONS[key]}
                   </div>
-                  {/* Label + points */}
                   <div className="text-left min-w-0">
-                    <span
-                      className="text-sm font-semibold leading-tight block truncate"
-                      style={{ color: style.text }}
-                    >
-                      {action.label}
-                    </span>
-                    <span className="text-[11px] font-mono font-bold" style={{ color: `${style.text}90` }}>
-                      +{action.points} pts
-                    </span>
+                    <span className="text-sm font-semibold leading-tight block truncate" style={{ color: style.text }}>{action.label}</span>
+                    <span className="text-[11px] font-mono font-bold" style={{ color: `${style.text}90` }}>+{action.points} pts</span>
                   </div>
                 </button>
               );

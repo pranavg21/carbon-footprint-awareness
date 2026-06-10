@@ -188,3 +188,15 @@ export const MAIN_CONTENT_ID = "main-content" as const;
 
 /** ID for the skip link element. */
 export const SKIP_LINK_ID = "skip-link" as const;
+
+// ── Export ───────────────────────────────────────────────────────────
+
+/** Application data export version. */
+export const EXPORT_VERSION = "1.0.0" as const;
+
+/** MIME type for JSON exports. */
+export const JSON_MIME_TYPE = "application/json" as const;
+
+/** Filename prefix for exported data files. */
+export const EXPORT_FILENAME_PREFIX = "carbontrack-export-" as const;
+

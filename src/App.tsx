@@ -11,6 +11,7 @@
 import React, { Suspense, useState, useEffect, useCallback } from "react";
 import { Sidebar, SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED, type ViewId } from "./components/layout/Sidebar";
 import { SkipLink } from "./components/layout/SkipLink";
+import { ErrorBoundary } from "./components/layout/ErrorBoundary";
 import { Header } from "./components/layout/Header";
 import { HeroScore } from "./components/dashboard/HeroScore";
 import { ActionDock } from "./components/actions/ActionDock";
@@ -170,7 +171,7 @@ function App(): React.JSX.Element {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <SkipLink />
       <ToastContainer />
 
@@ -188,7 +189,7 @@ function App(): React.JSX.Element {
           </main>
         </div>
       </div>
-    </>
+    </ErrorBoundary>
   );
 }
 
