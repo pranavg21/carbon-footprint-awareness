@@ -101,7 +101,27 @@ export default function GeminiChat(): React.JSX.Element {
   }, []);
 
   /**
+   * Parses a line and renders bold text safely without dangerouslySetInnerHTML.
+   *
+   * @param line - Raw text line
+   * @returns Array of React nodes with bold segments wrapped in strong tags
+   */
+  const renderBoldText = useCallback((line: string): ReadonlyArray<React.ReactNode> => {
+    const parts = line.split(/\*\*(.+?)\*\*/g);
+    return parts.map((part, idx): React.ReactNode =>
+      idx % 2 === 1 ? (
+        <strong key={idx} className="text-emerald-300 font-semibold">
+          {part}
+        </strong>
+      ) : (
+        part
+      )
+    );
+  }, []);
+
+  /**
    * Formats the answer text with basic markdown-like styling.
+   * Uses safe React rendering — no dangerouslySetInnerHTML.
    *
    * @param text - Raw answer text
    * @returns Formatted JSX
@@ -114,34 +134,21 @@ export default function GeminiChat(): React.JSX.Element {
           const key = `line-${i}`;
           if (line.trim().length === 0) return <br key={key} />;
 
-          // Bold text: **text**
-          const formatted = line.replace(
-            /\*\*(.+?)\*\*/g,
-            '<strong class="text-emerald-300 font-semibold">$1</strong>'
-          );
-
-          // Bullet points
-          if (line.trim().startsWith("•") || line.trim().startsWith("-")) {
-            return (
-              <p
-                key={key}
-                className="text-sm text-slate-300 pl-2"
-                dangerouslySetInnerHTML={{ __html: formatted }}
-              />
-            );
-          }
+          const isBullet =
+            line.trim().startsWith("•") || line.trim().startsWith("-");
 
           return (
             <p
               key={key}
-              className="text-sm text-slate-300"
-              dangerouslySetInnerHTML={{ __html: formatted }}
-            />
+              className={`text-sm text-slate-300${isBullet ? " pl-2" : ""}`}
+            >
+              {renderBoldText(line)}
+            </p>
           );
         })}
       </div>
     );
-  }, []);
+  }, [renderBoldText]);
 
   return (
     <section

@@ -304,7 +304,7 @@ const SYSTEM_PROMPT = [
   "climate science, and environmental impact. Be specific with numbers",
   "and actionable advice. Keep responses under 150 words. Use bullet",
   "points for lists. Always be encouraging and positive.",
-].join(" ") as string;
+].join(" ");
 
 /** Maximum retries for rate-limited requests. */
 const MAX_RETRIES = 2 as const;
