@@ -46,6 +46,11 @@ const SettingsPage = React.lazy(
   () => import("./components/pages/SettingsPage").then((m) => ({ default: m.SettingsPage }))
 );
 
+/** Lazy-loaded Gemini AI chat component for code splitting. */
+const GeminiChat = React.lazy(
+  () => import("./components/dashboard/GeminiChat")
+);
+
 /**
  * Loading placeholder for Suspense boundaries.
  *
@@ -76,6 +81,9 @@ function DashboardView(): React.JSX.Element {
       <HeroScore />
       <ActionDock />
       <StatsRow />
+      <Suspense fallback={<SectionSkeleton />}>
+        <GeminiChat />
+      </Suspense>
       <Suspense fallback={<SectionSkeleton />}>
         <CategoryDonut />
       </Suspense>
