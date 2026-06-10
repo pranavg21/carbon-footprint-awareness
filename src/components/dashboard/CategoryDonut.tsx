@@ -207,7 +207,7 @@ export function CategoryDonut(): React.JSX.Element {
           {/* Center content */}
           <text
             x={DONUT_CENTER}
-            y={DONUT_CENTER - 6}
+            y={DONUT_CENTER - 4}
             textAnchor="middle"
             dominantBaseline="central"
             className="fill-white font-mono font-black"
@@ -217,7 +217,7 @@ export function CategoryDonut(): React.JSX.Element {
           </text>
           <text
             x={DONUT_CENTER}
-            y={DONUT_CENTER + 16}
+            y={DONUT_CENTER + 14}
             textAnchor="middle"
             dominantBaseline="central"
             className="fill-slate-500 font-semibold uppercase"
@@ -242,20 +242,21 @@ export function CategoryDonut(): React.JSX.Element {
       )}
 
       {/* Legend with thick progress bars */}
-      <div className="flex flex-col gap-2.5 mt-4">
+      <div className="flex flex-col gap-3 mt-4">
         {segments.map((seg) => {
           const pct = Math.round(seg.percentage);
           const isHovered = hoveredCategory === seg.category;
           return (
             <div
               key={seg.category}
-              className={`cursor-pointer rounded-xl px-3 py-2.5 transition-all duration-200 ${
+              className={`cursor-pointer rounded-xl transition-all duration-200 ${
                 isHovered ? "bg-white/[0.05]" : ""
               }`}
+              style={{ padding: "10px 12px" }}
               onMouseEnter={(): void => handleMouseEnter(seg.category)}
               onMouseLeave={handleMouseLeave}
             >
-              <div className="flex items-center gap-3 mb-1.5">
+              <div className="flex items-center gap-2.5">
                 <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: `${seg.color}18` }}
@@ -274,8 +275,8 @@ export function CategoryDonut(): React.JSX.Element {
                   {pct}%
                 </span>
               </div>
-              {/* Thick progress bar */}
-              <div className="w-full h-2.5 bg-carbon-800/60 rounded-full overflow-hidden">
+              {/* Progress bar — clear gap from label */}
+              <div className="w-full h-2.5 bg-carbon-800/60 rounded-full overflow-hidden mt-2">
                 <div
                   className="h-full rounded-full transition-all duration-700 ease-out"
                   style={{

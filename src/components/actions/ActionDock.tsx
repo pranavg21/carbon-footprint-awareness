@@ -1,9 +1,8 @@
 /**
  * Primary action dock for quick eco-action logging.
  *
- * This is the core interaction loop of the entire app.
- * Buttons are vibrant with solid color backgrounds, glow on hover,
- * and satisfying press animations. Not afterthoughts — primary UI.
+ * Buttons are taller (60px), content is centered within each button,
+ * with consistent left/right padding. Vibrant hover glow + press animations.
  *
  * @module ActionDock
  */
@@ -87,8 +86,8 @@ export function ActionDock(): React.JSX.Element {
 
   return (
     <nav className="action-dock-inline" aria-label="Quick action logging">
-      <div className="glass-panel p-4">
-        <div className="flex items-center justify-between mb-3">
+      <div className="glass-panel p-4 sm:p-5">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-bold text-white uppercase tracking-wider">
             Log Activity
           </h2>
@@ -104,10 +103,12 @@ export function ActionDock(): React.JSX.Element {
               <button
                 key={key}
                 onClick={(): void => handleAction(key)}
-                className="action-dock-btn group flex items-center gap-3 py-3.5 px-4 rounded-2xl border transition-all duration-200 cursor-pointer"
+                className="action-dock-btn group flex items-center justify-center gap-3 rounded-2xl border transition-all duration-200 cursor-pointer"
                 style={{
                   backgroundColor: style.bg,
                   borderColor: `${style.text}20`,
+                  padding: "14px 16px",
+                  minHeight: "60px",
                 }}
                 onMouseEnter={(e): void => {
                   const el = e.currentTarget;
@@ -124,7 +125,7 @@ export function ActionDock(): React.JSX.Element {
                   el.style.transform = "translateY(0)";
                 }}
                 onMouseDown={(e): void => {
-                  e.currentTarget.style.transform = "scale(0.95)";
+                  e.currentTarget.style.transform = "scale(0.96)";
                 }}
                 onMouseUp={(e): void => {
                   e.currentTarget.style.transform = "translateY(-2px)";
@@ -143,9 +144,9 @@ export function ActionDock(): React.JSX.Element {
                   {ACTION_ICONS[key]}
                 </div>
                 {/* Label + points */}
-                <div className="text-left">
+                <div className="text-left min-w-0">
                   <span
-                    className="text-sm font-semibold leading-tight block"
+                    className="text-sm font-semibold leading-tight block truncate"
                     style={{ color: style.text }}
                   >
                     {action.label}

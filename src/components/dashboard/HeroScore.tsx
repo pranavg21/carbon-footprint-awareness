@@ -52,7 +52,7 @@ export function HeroScore(): React.JSX.Element {
   const isOverTarget = totalScore >= monthlyTarget;
 
   return (
-    <div className="hero-section glass-panel animate-pulse-glow p-5 sm:p-6">
+    <div className="hero-section glass-panel animate-pulse-glow p-4 sm:p-5">
       {/* Top row: label + grade + target status */}
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2.5">

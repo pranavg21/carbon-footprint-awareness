@@ -1,9 +1,8 @@
 /**
  * GitHub-style streak heatmap component.
  *
- * Displays a 30-day activity matrix with month labels across
- * the top, all 7 day labels on the left, and a Less→More
- * legend at the bottom. No clipping.
+ * Uses CSS Grid with `auto-fit` columns so cells expand to fill
+ * the full container width. No fixed pixel sizes. No dead space.
  *
  * @module StreakHeatmap
  */
@@ -133,7 +132,6 @@ export function StreakHeatmap(): React.JSX.Element {
     for (let colIdx = 0; colIdx < columns.length; colIdx++) {
       const col = columns[colIdx];
       if (!col) continue;
-      // Find the first real cell in this column
       const firstCell = col.find((c): c is HeatmapCellData => c !== null);
       if (firstCell && firstCell.month !== lastMonth) {
         labels.push({
@@ -148,11 +146,12 @@ export function StreakHeatmap(): React.JSX.Element {
   }, [columns]);
 
   const activeDays = cells.filter((c) => c.actionCount > 0).length;
+  const numCols = columns.length;
 
   return (
     <GlassCard className="heatmap-section">
       {/* Custom header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-eco-mint" aria-hidden="true" />
           <h2 className="text-sm font-bold text-white uppercase tracking-wider">
@@ -161,85 +160,81 @@ export function StreakHeatmap(): React.JSX.Element {
         </div>
         <div className="flex items-center gap-3 text-[11px]">
           <span className="text-slate-400">
-            <span className="font-mono font-bold text-eco-mint">{activeDays}</span>
-            <span className="hidden sm:inline"> active days</span>
+            <span className="font-mono font-bold text-eco-mint">{activeDays}</span> active days
           </span>
-          <span className="text-slate-700">·</span>
+          <span className="text-slate-600">·</span>
           <span className="text-slate-400">
             <span className="font-mono font-bold text-eco-amber">{currentStreak}</span> day streak
           </span>
         </div>
       </div>
 
-      {/* Heatmap with day labels + month header */}
-      <div>
-        <div className="flex">
-          {/* Day labels spacer */}
-          <div className="flex-shrink-0 w-9" />
-          {/* Month labels — flex to fill */}
-          <div className="flex flex-1 gap-1">
-            {columns.map((_, colIdx) => {
-              const monthLabel = monthLabels.find((m) => m.colIndex === colIdx);
+      {/* Heatmap CSS Grid — cells fill 100% width */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: `36px repeat(${numCols}, 1fr)`,
+          gridTemplateRows: `18px repeat(7, 1fr)`,
+          gap: "4px",
+        }}
+      >
+        {/* Top-left corner spacer */}
+        <div />
+
+        {/* Month headers — one per column, flex-fill */}
+        {columns.map((_, colIdx) => {
+          const monthLabel = monthLabels.find((m) => m.colIndex === colIdx);
+          return (
+            <div
+              key={`month-${colIdx}`}
+              className="flex items-end justify-center"
+            >
+              {monthLabel ? (
+                <span className="text-[10px] text-slate-500 font-medium leading-none">
+                  {monthLabel.label}
+                </span>
+              ) : null}
+            </div>
+          );
+        })}
+
+        {/* 7 day rows */}
+        {DAY_LABELS.map((label, rowIndex) => (
+          <React.Fragment key={label}>
+            {/* Day label */}
+            <div className="flex items-center justify-end pr-1.5">
+              <span className="text-[10px] text-slate-500 font-medium leading-none">
+                {label}
+              </span>
+            </div>
+
+            {/* Cells for this day across all weeks — 1fr each */}
+            {columns.map((column, colIndex) => {
+              const cell = column[rowIndex] ?? null;
+              if (!cell) {
+                return (
+                  <div
+                    key={`empty-${colIndex}-${rowIndex}`}
+                    className="aspect-square rounded-[4px]"
+                  />
+                );
+              }
+
+              const color = INTENSITY_COLORS[cell.intensity] ?? INTENSITY_COLORS[0];
               return (
-                <div key={colIdx} className="flex-1 text-center">
-                  {monthLabel ? (
-                    <span className="text-[9px] text-slate-500 font-medium">
-                      {monthLabel.label}
-                    </span>
-                  ) : null}
-                </div>
+                <div
+                  key={cell.date}
+                  className="aspect-square rounded-[4px] cursor-pointer transition-all duration-150 hover:scale-[1.2] hover:z-10"
+                  style={{ backgroundColor: color }}
+                  title={`${formatShortDate(cell.date)}: ${cell.actionCount} actions`}
+                  role="gridcell"
+                  aria-label={`${formatShortDate(cell.date)}: ${cell.actionCount} actions logged`}
+                  tabIndex={0}
+                />
               );
             })}
-          </div>
-        </div>
-
-        {/* Grid rows */}
-        <div className="flex mt-1">
-          {/* Day labels column */}
-          <div className="flex flex-col flex-shrink-0 w-9 gap-1">
-            {DAY_LABELS.map((label) => (
-              <div
-                key={label}
-                className="flex items-center justify-end pr-2 h-0 flex-1"
-              >
-                <span className="text-[9px] text-slate-500 font-medium">
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Cell columns — flex-1 to fill space */}
-          <div className="flex flex-1 gap-1">
-            {columns.map((column, colIndex) => (
-              <div key={colIndex} className="flex flex-col flex-1 gap-1">
-                {column.map((cell, rowIndex) => {
-                  if (!cell) {
-                    return (
-                      <div
-                        key={`empty-${colIndex}-${rowIndex}`}
-                        className="flex-1 aspect-square"
-                      />
-                    );
-                  }
-
-                  const color = INTENSITY_COLORS[cell.intensity] ?? INTENSITY_COLORS[0];
-                  return (
-                    <div
-                      key={cell.date}
-                      className="flex-1 aspect-square rounded-[4px] cursor-pointer transition-all duration-150 hover:scale-[1.3] hover:z-10"
-                      style={{ backgroundColor: color }}
-                      title={`${formatShortDate(cell.date)}: ${cell.actionCount} actions`}
-                      role="gridcell"
-                      aria-label={`${formatShortDate(cell.date)}: ${cell.actionCount} actions logged`}
-                      tabIndex={0}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
+          </React.Fragment>
+        ))}
       </div>
 
       {/* Intensity legend */}

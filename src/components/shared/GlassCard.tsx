@@ -34,12 +34,12 @@ export function GlassCard({
   return (
     <section
       className={cn(
-        "glass-panel p-5 sm:p-6 animate-slide-up",
+        "glass-panel p-4 sm:p-5 animate-slide-up",
         className
       )}
     >
       {title ? (
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+        <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-5">
           {title}
         </h2>
       ) : null}

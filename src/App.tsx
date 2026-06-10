@@ -20,6 +20,10 @@ import { StreakHeatmap } from "./components/heatmap/StreakHeatmap";
 import { NudgeFeed } from "./components/nudges/NudgeFeed";
 import { ToastContainer } from "./components/feedback/ToastContainer";
 import { MAIN_CONTENT_ID } from "./lib/constants";
+import {
+  SIDEBAR_WIDTH_EXPANDED,
+  SIDEBAR_WIDTH_COLLAPSED,
+} from "./components/layout/Sidebar";
 
 /**
  * Root application component rendering the full dashboard.
@@ -27,11 +31,11 @@ import { MAIN_CONTENT_ID } from "./lib/constants";
  * @returns Application root element
  */
 function App(): React.JSX.Element {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed] = useState(false);
 
-  // Listen for sidebar collapse state changes
-  void setSidebarCollapsed;
-  void sidebarCollapsed;
+  const sidebarWidth = sidebarCollapsed
+    ? SIDEBAR_WIDTH_COLLAPSED
+    : SIDEBAR_WIDTH_EXPANDED;
 
   return (
     <>
@@ -46,12 +50,12 @@ function App(): React.JSX.Element {
         {/* Main content area — offset by sidebar width */}
         <div
           className="flex-1 flex flex-col min-h-screen transition-[margin] duration-300"
-          style={{ marginLeft: "200px" }}
+          style={{ marginLeft: sidebarWidth }}
         >
           <Header />
 
           <main id={MAIN_CONTENT_ID} className="flex-1">
-            <div className="dashboard-grid mt-1">
+            <div className="dashboard-grid">
               {/* 1. Hero Score — full width */}
               <HeroScore />
 

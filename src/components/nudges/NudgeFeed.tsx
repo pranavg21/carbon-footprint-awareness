@@ -1,9 +1,9 @@
 /**
  * Dynamic nudge feed component.
  *
- * Displays personalized insight cards. The section header already
- * contextualizes the top category, so individual card badges are
- * only shown when they differ from the top category.
+ * Displays personalized insight cards. The section header shows
+ * the top category on its own line below the title. Individual
+ * cards have generous 14-16px padding for a card-like feel.
  *
  * @module NudgeFeed
  */
@@ -38,8 +38,7 @@ interface NudgeCardProps {
 }
 
 /**
- * Individual nudge card. Category badge only shows
- * when it differs from the section's top category.
+ * Individual nudge card with generous padding.
  *
  * @param props - Component props
  * @returns Nudge card element
@@ -51,7 +50,8 @@ function NudgeCardItem({ nudge }: NudgeCardProps): React.JSX.Element {
 
   return (
     <article
-      className="nudge-card glass-panel-light p-4 rounded-xl"
+      className="nudge-card glass-panel-light rounded-xl"
+      style={{ padding: "14px 16px" }}
       aria-label={`${label} tip: ${nudge.message}`}
     >
       <div className="flex items-start gap-3">
@@ -63,7 +63,7 @@ function NudgeCardItem({ nudge }: NudgeCardProps): React.JSX.Element {
           <span style={{ color }}>{icon}</span>
         </div>
 
-        {/* Content — no per-card label, icon conveys category */}
+        {/* Content */}
         <div className="flex-1 min-w-0">
           <p className="text-[13px] text-slate-200 leading-relaxed">
             {nudge.message}
@@ -89,20 +89,25 @@ export function NudgeFeed(): React.JSX.Element {
 
   return (
     <GlassCard className="nudge-section">
-      {/* Custom title with sparkle icon */}
-      <div className="flex items-center gap-2 mb-4">
+      {/* Title row */}
+      <div className="flex items-center gap-2 mb-2">
         <Sparkles className="w-4 h-4 text-eco-amber" aria-hidden="true" />
         <h2 className="text-sm font-bold text-white uppercase tracking-wider">
           Smart Insights
         </h2>
+      </div>
+
+      {/* Top category badge — on its own line, clearly a filter indicator */}
+      <div className="mb-5">
         <span
-          className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ml-auto"
+          className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
           style={{
             color: CATEGORY_COLORS[topCategory],
             backgroundColor: `${CATEGORY_COLORS[topCategory]}12`,
+            border: `1px solid ${CATEGORY_COLORS[topCategory]}25`,
           }}
         >
-          {CATEGORY_LABELS[topCategory]}
+          Top category: {CATEGORY_LABELS[topCategory]}
         </span>
       </div>
 
